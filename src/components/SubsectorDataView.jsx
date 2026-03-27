@@ -159,9 +159,8 @@ const SubsectorDataView = ({ subsector, sector, filterOptions, filterOptionsLoad
   // Contextual data for this subsector
   const [subsectorIndicators, setSubsectorIndicators] = useState([]);
   const [subsectorItems, setSubsectorItems] = useState([]);
-  const [subsectorYears, setSubsectorYears] = useState([]);
   const [loadingIndicators, setLoadingIndicators] = useState(false);
-  const [loadingItemsYears, setLoadingItemsYears] = useState(false);
+  const [loadingItems, setLoadingItems] = useState(false);
 
   // Inline preview state
   const [previewRows, setPreviewRows] = useState([]);
@@ -179,6 +178,23 @@ const SubsectorDataView = ({ subsector, sector, filterOptions, filterOptionsLoad
   // Download
   const [downloading, setDownloading] = useState(false);
 
+  // ── Generate years dynamically (2000 up to current year + 5) ──────────────────
+  const years = useMemo(() => {
+    const currentYear = new Date().getFullYear();
+    const yearsArray = [];
+    for (let year = 1963; year <= currentYear + 0; year++) {
+      yearsArray.push({ id: String(year), name: String(year) });
+    }
+    return yearsArray;
+  }, []);
+
+  // Filter years based on search input
+  const filteredYears = useMemo(() => {
+    return years.filter((y) =>
+      y.name.toLowerCase().includes(searchYears.toLowerCase())
+    );
+  }, [years, searchYears]);
+
   // ── Fetch contextual data when subsector changes ──────────────────────────
 
   useEffect(() => {
@@ -192,7 +208,7 @@ const SubsectorDataView = ({ subsector, sector, filterOptions, filterOptionsLoad
     setSelectedItems([]);
     setSelectedYears([]);
     fetchIndicatorsForSubsector();
-    fetchItemsAndYearsForSubsector();
+    fetchItemsForSubsector();
   }, [subsector?.id]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // indicators.subsector FK → filter by subsector
@@ -212,9 +228,9 @@ const SubsectorDataView = ({ subsector, sector, filterOptions, filterOptionsLoad
     }
   };
 
-  // Extract unique items + years from data records for this subsector
-  const fetchItemsAndYearsForSubsector = async () => {
-    setLoadingItemsYears(true);
+  // Extract unique items from data records for this subsector
+  const fetchItemsForSubsector = async () => {
+    setLoadingItems(true);
     try {
       const res = await axios.get(`${API_BASE_URL}/data/`, {
         params: { subsector: subsector.id, page_size: 1000 },
@@ -227,16 +243,11 @@ const SubsectorDataView = ({ subsector, sector, filterOptions, filterOptionsLoad
         if (r.item && r.item_name) itemMap[r.item] = r.item_name;
       });
       setSubsectorItems(Object.entries(itemMap).map(([id, name]) => ({ id: parseInt(id), name })));
-
-      const years = [...new Set(records.map(r => r.time_period))]
-        .filter(Boolean).sort().reverse();
-      setSubsectorYears(years);
     } catch (err) {
-      console.error('Error fetching items/years:', err);
+      console.error('Error fetching items:', err);
       setSubsectorItems([]);
-      setSubsectorYears([]);
     } finally {
-      setLoadingItemsYears(false);
+      setLoadingItems(false);
     }
   };
 
@@ -276,11 +287,6 @@ const SubsectorDataView = ({ subsector, sector, filterOptions, filterOptionsLoad
   const filteredItems = useMemo(() =>
     subsectorItems.filter(i => i.name.toLowerCase().includes(searchItems.toLowerCase())),
     [subsectorItems, searchItems]);
-
-  const filteredYears = useMemo(() =>
-    subsectorYears.filter(y => String(y).includes(searchYears))
-      .map(y => ({ id: y, name: String(y) })),
-    [subsectorYears, searchYears]);
 
   // ── Helpers ──────────────────────────────────────────────────────────────
 
@@ -517,12 +523,12 @@ const SubsectorDataView = ({ subsector, sector, filterOptions, filterOptionsLoad
                 onToggle={(id) => toggle(setSelectedItems, id)}
                 onSelectAll={() => setSelectedItems(filteredItems.map(i => i.id))}
                 onClearAll={() => setSelectedItems([])}
-                loading={loadingItemsYears}
+                loading={loadingItems}
                 badge={selectedItems.length}
               />
             </div>
 
-            {/* Row 3: Years */}
+            {/* Row 3: Years - Using dynamically generated years */}
             <div className="fao-panels-row fao-panels-row-single">
               <FilterPanel
                 tabs={[{ id: 'years', label: 'YEARS' }]}
@@ -530,13 +536,13 @@ const SubsectorDataView = ({ subsector, sector, filterOptions, filterOptionsLoad
                 onTabChange={() => {}}
                 searchValue={searchYears}
                 onSearchChange={setSearchYears}
-                searchPlaceholder="e.g. 2024"
+                searchPlaceholder="e.g. 2025"
                 items={filteredYears}
                 selectedItems={selectedYears}
                 onToggle={(id) => toggle(setSelectedYears, id)}
                 onSelectAll={() => setSelectedYears(filteredYears.map(y => y.id))}
                 onClearAll={() => setSelectedYears([])}
-                loading={loadingItemsYears}
+                loading={false}
                 badge={selectedYears.length}
               />
             </div>
@@ -581,7 +587,7 @@ const SubsectorDataView = ({ subsector, sector, filterOptions, filterOptionsLoad
                 <p style={{ marginTop: 10, marginBottom: 0 }}>
                   <strong>{subsectorIndicators.length}</strong> indicator{subsectorIndicators.length !== 1 ? 's' : ''} &nbsp;·&nbsp;
                   <strong>{subsectorItems.length}</strong> item{subsectorItems.length !== 1 ? 's' : ''} &nbsp;·&nbsp;
-                  <strong>{subsectorYears.length}</strong> year{subsectorYears.length !== 1 ? 's' : ''}
+                  <strong>{years.length}</strong> year{years.length !== 1 ? 's' : ''}
                 </p>
               )}
             </div>
@@ -617,7 +623,7 @@ const SubsectorDataView = ({ subsector, sector, filterOptions, filterOptionsLoad
           sector={sector}
           filterOptions={filterOptions}
           subsectorItems={subsectorItems}
-          subsectorYears={subsectorYears}
+          subsectorYears={years.map(y => y.name)}
         />
       )}
 
