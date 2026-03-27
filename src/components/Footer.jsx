@@ -28,12 +28,12 @@ const Footer = () => {
           </div>
           <div>
             <h4>Connect</h4>
-            <a href="#" style={{ display: 'block' }}><i className="fab fa-twitter"></i> Twitter</a>
-            <a href="#" style={{ display: 'block' }}><i className="fab fa-github"></i> GitHub</a>
+            <a href="https://x.com/kilimoKE" style={{ display: 'block' }}><i className="fab fa-twitter"></i> Twitter</a>
+            <a href="https://www.facebook.com/profile.php?id=100064454481570&sk=about" style={{ display: 'block' }}><i className="fab fa-facebook"></i> Facebook</a>
           </div>
         </div>
         <div style={{ textAlign: 'center', marginTop: '48px', paddingTop: '24px', borderTop: '1px solid var(--border-light)', fontSize: '0.75rem' }}>
-          © 2026 KilimoSTAT | CC BY 4.0 | <a href="https://kilimo.go.ke/">Ministry of Agriculture and Livestock Development</a> | v4.0
+          © 2026 KilimoSTAT | CC BY 4.0 | <a href="https://kilimo.go.ke/">Ministry of Agriculture and Livestock Development</a> | version 4.1
         </div>
       </div>
     </footer>
