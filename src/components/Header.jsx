@@ -20,7 +20,7 @@ const Header = ({
         <div className="logo-section">
           <div className="logo-area">
             <div className="logo-icon">
-              <i className="fas fa-chart-line" style={{ fontSize: '24px', color: 'white' }}></i>
+                 <img src='/img/gok-logo-flag.png' />
             </div>
             <div className="logo-text">
               <h3>KilimoSTAT</h3>
