@@ -1,4 +1,6 @@
+// App.js
 import React, { useState, useEffect } from 'react';
+import { BrowserRouter as Router, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import Header from './components/Header';
 import MobileMenu from './components/MobileMenu';
 import Toast from './components/Toast';
@@ -14,7 +16,8 @@ import About from './components/About';
 import NationalCountyData from './components/NationalCountyData';
 import './styles/App.css';
 
-const App = () => {
+// Main App Content Component
+const AppContent = () => {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [notificationCount, setNotificationCount] = useState(3);
   const [toastMessage, setToastMessage] = useState('');
@@ -22,7 +25,9 @@ const App = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [language, setLanguage] = useState('EN');
-  const [currentPage, setCurrentPage] = useState('home');
+  
+  const navigate = useNavigate();
+  const location = useLocation();
 
   const showToast = (message) => {
     setToastMessage(message);
@@ -50,14 +55,24 @@ const App = () => {
   };
 
   const handlePageChange = (page) => {
-    setCurrentPage(page);
+    navigate(page === 'home' ? '/' : `/${page}`);
     window.scrollTo(0, 0);
   };
 
   const handleFoodSystemsClick = (e) => {
     if (e) e.preventDefault();
-    setCurrentPage('food-systems');
+    navigate('/food-systems');
     showToast('🔄 Loading Kenya Food Systems Dashboard...');
+  };
+
+  // Determine current page from location
+  const getCurrentPage = () => {
+    const path = location.pathname;
+    if (path === '/') return 'home';
+    if (path === '/about') return 'about';
+    if (path === '/food-systems') return 'food-systems';
+    if (path === '/national-county-data') return 'national-county-data';
+    return 'home';
   };
 
   useEffect(() => {
@@ -72,28 +87,6 @@ const App = () => {
     showToast('✨ Welcome to KilimoSTAT - Kenya\'s FAIR open data platform');
   }, []);
 
-  const renderContent = () => {
-    switch(currentPage) {
-      case 'about':
-        return <About />;
-      case 'food-systems':
-        return <FoodSystemsRedirect />;
-      case 'national-county-data':
-        return <NationalCountyData />;
-      case 'home':
-      default:
-        return (
-          <>
-            <Hero />
-            <ChartsSection showToast={showToast} />
-            <DatasetsSection showToast={showToast} />
-            <FairPrinciplesSection showToast={showToast} />
-            <CTASection showToast={showToast} />
-          </>
-        );
-    }
-  };
-
   return (
     <>
       <Header
@@ -106,7 +99,7 @@ const App = () => {
         onOpenModal={() => setIsModalOpen(true)}
         onOpenMobileMenu={() => setIsMobileMenuOpen(true)}
         onFoodSystemsClick={handleFoodSystemsClick}
-        currentPage={currentPage}
+        currentPage={getCurrentPage()}
         onPageChange={handlePageChange}
       />
       
@@ -128,7 +121,20 @@ const App = () => {
       />
       
       <main className="main-content">
-        {renderContent()}
+        <Routes>
+          <Route path="/" element={
+            <>
+              <Hero />
+              <ChartsSection showToast={showToast} />
+              <DatasetsSection showToast={showToast} />
+              <FairPrinciplesSection showToast={showToast} />
+              <CTASection showToast={showToast} />
+            </>
+          } />
+          <Route path="/about" element={<About />} />
+          <Route path="/food-systems" element={<FoodSystemsRedirect />} />
+          <Route path="/national-county-data" element={<NationalCountyData />} />
+        </Routes>
       </main>
       
       <AuthModal
@@ -139,6 +145,15 @@ const App = () => {
       
       <Footer />
     </>
+  );
+};
+
+// Main App Component with Router
+const App = () => {
+  return (
+    <Router>
+      <AppContent />
+    </Router>
   );
 };
 

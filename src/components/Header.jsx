@@ -1,5 +1,6 @@
 // components/Header.jsx
 import React from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 
 const Header = ({
   language,
@@ -14,15 +15,23 @@ const Header = ({
   currentPage,
   onPageChange
 }) => {
+  const navigate = useNavigate();
+
+  const handleNavigation = (path, page) => {
+    navigate(path);
+    if (onPageChange) onPageChange(page);
+  };
+
   return (
     <div className="header-wrapper">
       <div className="container">
         <div className="logo-section">
           <div className="logo-area">
-            <div className="logo-icon">
-                 <img src='/img/gok-logo-flag.png' />
+            <div className="logo-icon" onClick={() => handleNavigation('/', 'home')} style={{ cursor: 'pointer' }}>
+              
+              <img src='/img/gok-logo-flag.png' />
             </div>
-            <div className="logo-text">
+            <div className="logo-text" onClick={() => handleNavigation('/', 'home')} style={{ cursor: 'pointer' }}>
               <h3>KilimoSTAT</h3>
               <p>Kenya's Agricultural Open Data Platform</p>
             </div>
@@ -43,10 +52,10 @@ const Header = ({
                 </div>
                 <div className="lang-dropdown">
                   <a href="#" onClick={(e) => { e.preventDefault(); onLanguageChange('EN', 'English'); }}>
-                    <i className="fas fa-flag"></i> English
+                    <i className="fas fa-flag-usa"></i> English
                   </a>
                   <a href="#" onClick={(e) => { e.preventDefault(); onLanguageChange('SW', 'Kiswahili'); }}>
-                    <i className="fas fa-flag"></i> Kiswahili
+                    <i className="fas fa-flag-kenya"></i> Kiswahili
                   </a>
                 </div>
               </div>
@@ -55,7 +64,6 @@ const Header = ({
               <button className="btn-outline" style={{ padding: '8px 20px' }} onClick={onOpenModal}>
                 <i className="fas fa-sign-in-alt"></i> Log in
               </button>
-              &nbsp;&nbsp;&nbsp;
               <button className="btn" style={{ padding: '8px 20px' }} onClick={onOpenModal}>
                 <i className="fas fa-user-plus"></i> Register
               </button>
@@ -70,79 +78,40 @@ const Header = ({
       <div className="main-menu-section">
         <div className="container">
           <ul className="main-nav">
-            {/* Home Link */}
             <li className="nav-item">
-              <a 
-                href="#" 
+              <Link 
+                to="/" 
                 className={`nav-link ${currentPage === 'home' ? 'active' : ''}`}
-                onClick={(e) => {
-                  e.preventDefault();
-                  onPageChange('home');
-                }}
+                onClick={() => onPageChange('home')}
               >
                 <i className="fas fa-home"></i> Home
-              </a>
+              </Link>
             </li>
-            {/* About Link */}
             <li className="nav-item">
-              <a 
-                href="#" 
-                className={`nav-link ${currentPage === 'about' ? 'active' : ''}`}
-                onClick={(e) => {
-                  e.preventDefault();
-                  onPageChange('about');
-                }}
-              >
-                <i className="fas fa-info-circle"></i> About
-              </a>
-            </li>
-            
-            {/* Data Dropdown with National & County Data Link */}
-            <li className="nav-item">
-              <a
-                href="#"
+              <Link 
+                to="/national-county-data" 
                 className={`nav-link ${currentPage === 'national-county-data' ? 'active' : ''}`}
-                onClick={(e) => e.preventDefault()}
+                onClick={() => onPageChange('national-county-data')}
               >
                 <i className="fas fa-database"></i> Data <i className="fas fa-chevron-down"></i>
-              </a>
+              </Link>
               <div className="dropdown-menu">
-                <a 
-                  href="#" 
-                  onClick={(e) => {
-                    e.preventDefault();
-                    onPageChange('national-county-data');
-                  }}
-                  className={currentPage === 'national-county-data' ? 'active' : ''}
-                >
+                <Link to="/national-county-data">
                   <i className="fas fa-table"></i> National and County
-                </a>
-                <a href="https://www.nepad.org/caadp/countries/kenya"> 
-                  <i className="fas fa-chart-line"></i> Kenya CAADP
-                </a>
-                <a href="#">
-                  <i className="fas fa-map-marker-alt"></i> Geospatial Data
-                </a>
-                <a href="https://statistics.kilimo.go.ke/api/redoc/">
-                  <i className="fas fa-code"></i> API Documentation
-                </a>
-                <a href="https://statistics.kilimo.go.ke/api/swagger/">
-                  <i className="fas fa-code"></i> API Access
-                </a>
-                <a href="#">
-                  <i className="fas fa-download"></i> Bulk Downloads
-                </a>
+                </Link>
+                <a href="#"><i className="fas fa-chart-line"></i> Kenya CAADP</a>
+                <a href="#"><i className="fas fa-map-marker-alt"></i> Geospatial Data</a>
+                <a href="#"><i className="fas fa-code"></i> API Access</a>
+                <a href="#"><i className="fas fa-download"></i> Bulk Downloads</a>
               </div>
             </li>
-            
-            {/* Dashboards Dropdown */}
             <li className="nav-item">
               <a href="#" className="nav-link">
                 <i className="fas fa-chart-pie"></i> Dashboards <i className="fas fa-chevron-down"></i>
               </a>
               <div className="dropdown-menu">
-                <a href="https://kalro.org/kiamis/dashboard.html"><i className="fas fa-chart-line"></i> KIAMIS</a>
-                <a href="https://kamis.kilimo.go.ke/"><i className="fas fa-chart-line"></i> KAMIS</a>
+                <a href="#"><i className="fas fa-chart-line"></i> KIAMIS</a>
+                <a href="#"><i className="fas fa-chart-line"></i> KAMIS</a>
                 <a href="#"><i className="fas fa-tractor"></i> Crop Production</a>
                 <a href="#"><i className="fas fa-paw"></i> Livestock Monitor</a>
                 <a href="#"><i className="fas fa-chart-pie"></i> Market Prices</a>
@@ -150,22 +119,17 @@ const Header = ({
                 <a href="#"><i className="fas fa-chart-bar"></i> Trade Analytics</a>
               </div>
             </li>
-            
-            {/* Reports Dropdown */}
             <li className="nav-item">
               <a href="#" className="nav-link">
                 <i className="fas fa-file-alt"></i> Reports <i className="fas fa-chevron-down"></i>
-              </a>  
+              </a>
               <div className="dropdown-menu">
-                <a href="https://kilimo.go.ke/publications/"><i className="fas fa-file-pdf"></i> Publications</a>
-                <a href="https://kilimo.go.ke/reports/"><i className="fas fa-file-pdf"></i> Annual Reports</a>
-                <a href="https://www.knbs.or.ke/economic-surveys/"><i className="fas fa-chart-column"></i> Economic Surveys</a>
-                <a href="https://kilimo.go.ke/kenya-crop-conditions/"><i className="fas fa-chart-column"></i> Crop Conditions</a>
-                <a href="https://kilimo.go.ke/ministry-policies/livestock-2/"><i className="fas fa-chart-line"></i> Livestock Policy Outlook</a>
+                <a href="#"><i className="fas fa-file-pdf"></i> Publications</a>
+                <a href="#"><i className="fas fa-file-pdf"></i> Annual Reports</a>
+                <a href="#"><i className="fas fa-chart-column"></i> Economic Reviews</a>
+                <a href="#"><i className="fas fa-chart-line"></i> Policy Outlook</a>
               </div>
             </li>
-            
-            {/* Food Systems Link */}
             <li className="nav-item">
               <a 
                 href="#" 
@@ -179,17 +143,25 @@ const Header = ({
                 <i className="fas fa-external-link-alt" style={{ fontSize: '0.7rem', marginLeft: '4px' }}></i>
               </a>
             </li>
-            
-            
-            
-            {/* Definitions Link */}
+            <li className="nav-item">
+              <Link 
+                to="/about" 
+                className={`nav-link ${currentPage === 'about' ? 'active' : ''}`}
+                onClick={() => onPageChange('about')}
+              >
+                <i className="fas fa-info-circle"></i> About
+              </Link>
+            </li>
             <li className="nav-item">
               <a href="#" className="nav-link">
                 <i className="fas fa-book"></i> Definitions
               </a>
-            </li>          
-          
-            
+            </li>
+            <li className="nav-item">
+              <a href="#" className="nav-link">
+                <i className="fas fa-question-circle"></i> FAQ
+              </a>
+            </li>
           </ul>
         </div>
       </div>
