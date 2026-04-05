@@ -33,7 +33,7 @@ const Header = ({
             </div>
             <div className="logo-text" onClick={() => handleNavigation('/', 'home')} style={{ cursor: 'pointer' }}>
               <h3>KilimoSTAT</h3>
-              <p>Kenya's Agricultural Open Data Platform</p>
+              <p>Kenya's Agricultural and Livestock Open Data Platform</p>
             </div>
           </div>
           
@@ -61,10 +61,11 @@ const Header = ({
               </div>
             </div>
             <div className="auth-buttons">
-              <button className="btn-outline" style={{ padding: '8px 20px' }} onClick={onOpenModal}>
+              <button className="btn" style={{ padding: '8px 20px' }} onClick={onOpenModal}>
                 <i className="fas fa-sign-in-alt"></i> Log in
               </button>
-              <button className="btn" style={{ padding: '8px 20px' }} onClick={onOpenModal}>
+              &nbsp;  &nbsp;
+              <button className="btn-outline" style={{ padding: '8px 20px' }} onClick={onOpenModal}>
                 <i className="fas fa-user-plus"></i> Register
               </button>
             </div>

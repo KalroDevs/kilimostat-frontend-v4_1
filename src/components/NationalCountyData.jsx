@@ -479,7 +479,7 @@ const NationalCountyData = () => {
                 <i className="fas fa-chart-line"></i> National and County Data
               </h1>
               <p className="header-description">
-                This module provides structured, disaggregated datasets covering agricultural indicators at both national and county levels. Data domains include crop production metrics (area, yield, output), livestock statistics, climate variables (rainfall, temperature), soil parameters, input utilization, and market price dynamics.          </p>
+                This module provides structured, disaggregated datasets covering agricultural indicators at both national and county levels. Data domains include crop production metrics (area, yield, output), livestock statistics, population, nutrition, input utilization, and market price dynamics.          </p>
             </div>
             <div className="header-stats">
               <div className="stat-badge">
