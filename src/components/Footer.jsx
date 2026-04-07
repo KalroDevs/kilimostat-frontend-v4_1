@@ -1,39 +1,153 @@
-import React from 'react';
+import React from "react";
 
 const Footer = () => {
   return (
-    <footer style={{ borderTop: '1px solid var(--border-light)', padding: '48px 0 32px', marginTop: '40px' }}>
+    <footer
+      style={{
+        background: "linear-gradient(135deg, #0f6e2b, #0c5a22)",
+        padding: "60px 0 30px",
+        marginTop: "60px",
+        color: "#e8f5e9",
+      }}
+    >
       <div className="container">
-        <div style={{ display: 'flex', flexWrap: 'wrap', justifyContent: 'space-between', gap: '40px' }}>
-          <div>
-            <i className="fas fa-chart-line" style={{ fontSize: '1.8rem', color: 'var(--green-primary)' }}></i>
-            <p style={{ marginTop: '12px' }}>
-              KilimoSTAT is an official open data platform by the Ministry of Agriculture and Livestock Development, 
-              providing trusted data and statistics on Kenya's agricultural sector to support informed decision-making, 
-              research, and innovation.
+        <div
+          style={{
+            display: "flex",
+            flexWrap: "wrap",
+            justifyContent: "space-between",
+            gap: "50px",
+          }}
+        >
+          {/* About */}
+          <div style={{ maxWidth: "300px" }}>
+           
+            <p style={{ marginTop: "16px", lineHeight: "1.6", color: "white", }}>
+              KilimoSTAT is Kenya’s official agricultural open data platform by the Ministry
+              of Agriculture & Livestock Development, offering trusted data for policy,
+              research, innovation, and digital agriculture services.
             </p>
           </div>
+
+          {/* FAIR */}
           <div>
-            <h4>FAIR Principles</h4>
-            <a href="#" style={{ display: 'block', color: 'var(--gray-light)', textDecoration: 'none' }}>Findable</a>
-            <a href="#" style={{ display: 'block' }}>Accessible</a>
-            <a href="#" style={{ display: 'block' }}>Interoperable</a>
-            <a href="#" style={{ display: 'block' }}>Reusable</a>
+            <h4 style={{ color: "#c8e6c9", marginBottom: "12px" }}>FAIR Principles</h4>
+            {["Findable", "Accessible", "Interoperable", "Reusable"].map((item) => (
+              <a
+                key={item}
+                href="#"
+                style={{
+                  display: "block",
+                  marginBottom: "6px",
+                  color: "#e8f5e9",
+                  textDecoration: "none",
+                  transition: "0.3s",
+                }}
+                onMouseOver={(e) => (e.target.style.color = "#a5d6a7")}
+                onMouseOut={(e) => (e.target.style.color = "#e8f5e9")}
+              >
+                {item}
+              </a>
+            ))}
           </div>
+
+          {/* Resources */}
           <div>
-            <h4>Resources</h4>
-            <a href="https://statistics.kilimo.go.ke/api/redoc/" style={{ display: 'block' }}>API Documentation</a>
-            <a href="https://statistics.kilimo.go.ke/api/swagger/" style={{ display: 'block' }}>API Console</a>
-            <a href="#" style={{ display: 'block' }}>FAQ</a>
+            <h4 style={{ color: "#c8e6c9", marginBottom: "12px" }}>Resources</h4>
+
+            <a
+              href="https://statistics.kilimo.go.ke/api/redoc/"
+              style={{
+                display: "block",
+                marginBottom: "6px",
+                color: "#e8f5e9",
+                textDecoration: "none",
+              }}
+            >
+              📘 API Documentation
+            </a>
+
+            <a
+              href="https://statistics.kilimo.go.ke/api/swagger/"
+              style={{
+                display: "block",
+                marginBottom: "6px",
+                color: "#e8f5e9",
+                textDecoration: "none",
+              }}
+            >
+              ⚙️ API Console
+            </a>
+
+            <a href="#" style={{ display: "block", color: "#e8f5e9" }}>
+              ❓ FAQ
+            </a>
           </div>
+
+          {/* Connect */}
           <div>
-            <h4>Connect</h4>
-            <a href="https://x.com/kilimoKE" style={{ display: 'block' }}><i className="fab fa-twitter"></i> Twitter</a>
-            <a href="https://www.facebook.com/profile.php?id=100064454481570&sk=about" style={{ display: 'block' }}><i className="fab fa-facebook"></i> Facebook</a>
+            <h4 style={{ color: "#c8e6c9", marginBottom: "12px" }}>Connect</h4>
+
+            <a
+              href="https://x.com/kilimoKE"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                display: "flex",
+                alignItems: "center",
+                marginBottom: "8px",
+                color: "#e8f5e9",
+                textDecoration: "none",
+              }}
+            >
+              <i className="fab fa-twitter" style={{ marginRight: "8px" }}></i>
+              Twitter
+            </a>
+
+            <a
+              href="https://www.facebook.com/profile.php?id=100064454481570&sk=about"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{
+                display: "flex",
+                alignItems: "center",
+                color: "#e8f5e9",
+                textDecoration: "none",
+              }}
+            >
+              <i className="fab fa-facebook" style={{ marginRight: "8px" }}></i>
+              Facebook
+            </a>
           </div>
         </div>
-        <div style={{ textAlign: 'center', marginTop: '48px', paddingTop: '24px', borderTop: '1px solid var(--border-light)', fontSize: '0.75rem' }}>
-          © 2026 KilimoSTAT | CC BY 4.0 | <a href="https://kilimo.go.ke/">Ministry of Agriculture and Livestock Development</a> | version 4.1
+
+        {/* Bottom Bar */}
+        <div
+          style={{
+            textAlign: "center",
+            marginTop: "48px",
+            paddingTop: "24px",
+            borderTop: "1px solid rgba(255, 255, 255, 0.2)",
+            fontSize: "0.8rem",
+            color: "#c8e6c9",
+          }}
+        >
+          CC BY 4.0 | © 2026{" "}
+          <a
+            href="https://kilimo.go.ke/"
+            style={{ color: "#a5d6a7", textDecoration: "none" }}
+          >
+            Ministry of Agriculture & Livestock Development
+          </a>{" "}
+           | All Rights Reserved
+          | Maintained by{" "}
+          <a
+            href="https://kilimo.go.ke/"
+            style={{ color: "#a5d6a7", textDecoration: "none" }}
+          >
+            KALRO
+          </a>
+          {" | "}System update version 4.3 | 
         </div>
       </div>
     </footer>
