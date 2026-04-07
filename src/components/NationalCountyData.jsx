@@ -1,29 +1,30 @@
 // components/NationalCountyData.jsx
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
+import { Link, useNavigate } from 'react-router-dom';
 
 const NationalCountyData = () => {
   // State for sectors and subsectors
   const [sectors, setSectors] = useState([]);
   const [expandedSectors, setExpandedSectors] = useState({});
-  const [selectedSubsector, setSelectedSubsector] = useState(null); // Single selection
+  const [selectedSubsector, setSelectedSubsector] = useState(null);
   const [subsectorSearch, setSubsectorSearch] = useState('');
   
-  // State for indicators (loaded based on selected subsector)
+  // State for indicators
   const [indicators, setIndicators] = useState([]);
-  const [selectedIndicator, setSelectedIndicator] = useState(null); // Single selection
+  const [selectedIndicator, setSelectedIndicator] = useState(null);
   const [indicatorsLoading, setIndicatorsLoading] = useState(false);
   const [indicatorSearch, setIndicatorSearch] = useState('');
   
-  // State for areas (counties and national)
+  // State for areas
   const [areas, setAreas] = useState([]);
-  const [selectedArea, setSelectedArea] = useState(null); // Single selection for area
+  const [selectedArea, setSelectedArea] = useState(null);
   const [areaSearch, setAreaSearch] = useState('');
   const [showCounties, setShowCounties] = useState(true);
   
-  // State for items (loaded based on selected indicator)
+  // State for items
   const [items, setItems] = useState([]);
-  const [selectedItem, setSelectedItem] = useState(null); // Single selection
+  const [selectedItem, setSelectedItem] = useState(null);
   const [itemsLoading, setItemsLoading] = useState(false);
   const [itemSearch, setItemSearch] = useState('');
   
@@ -38,7 +39,6 @@ const NationalCountyData = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
   const [showResults, setShowResults] = useState(false);
-  const [activeTab, setActiveTab] = useState('table');
   
   // State for modals
   const [showPreviewDetailsModal, setShowPreviewDetailsModal] = useState(false);
@@ -46,7 +46,6 @@ const NationalCountyData = () => {
   
   // State for export
   const [exporting, setExporting] = useState(false);
-  const [exportFormat, setExportFormat] = useState('csv');
   
   // State for notifications
   const [notification, setNotification] = useState({ show: false, message: '', type: 'success' });
@@ -54,24 +53,20 @@ const NationalCountyData = () => {
   // API Base URL
   const API_BASE_URL = 'https://statistics.kilimo.go.ke/api';
 
-  // Show notification helper
   const showNotification = (message, type = 'success') => {
     setNotification({ show: true, message, type });
     setTimeout(() => setNotification({ show: false, message: '', type: 'success' }), 3000);
   };
 
-  // Fetch sectors on component mount
   useEffect(() => {
     fetchSectors();
     fetchAreas();
   }, []);
 
-  // Fetch sectors from API
   const fetchSectors = async () => {
     try {
       const response = await axios.get(`${API_BASE_URL}/sectors/`);
       const sectorsData = response.data.results || response.data || [];
-      
       const subsectorsRes = await axios.get(`${API_BASE_URL}/subsectors/`);
       const allSubsectors = subsectorsRes.data.results || subsectorsRes.data || [];
       
@@ -81,11 +76,8 @@ const NationalCountyData = () => {
       }));
       
       setSectors(sectorsWithSubsectors);
-      
       const initialExpanded = {};
-      sectorsWithSubsectors.forEach(sector => {
-        initialExpanded[sector.id] = false;
-      });
+      sectorsWithSubsectors.forEach(sector => { initialExpanded[sector.id] = false; });
       setExpandedSectors(initialExpanded);
     } catch (error) {
       console.error('Error fetching sectors:', error);
@@ -93,7 +85,6 @@ const NationalCountyData = () => {
     }
   };
 
-  // Fetch areas
   const fetchAreas = async () => {
     try {
       const response = await axios.get(`${API_BASE_URL}/areas/`);
@@ -104,21 +95,13 @@ const NationalCountyData = () => {
     }
   };
 
-  // Fetch indicators based on selected subsector
   const fetchIndicatorsBySubsector = useCallback(async (subsectorId) => {
-    if (!subsectorId) {
-      setIndicators([]);
-      return;
-    }
-    
+    if (!subsectorId) { setIndicators([]); return; }
     setIndicatorsLoading(true);
     try {
       const response = await axios.get(`${API_BASE_URL}/indicators/`);
       const allIndicators = response.data.results || response.data || [];
-      
-      const filteredIndicators = allIndicators.filter(
-        indicator => indicator.subsector === subsectorId
-      );
+      const filteredIndicators = allIndicators.filter(indicator => indicator.subsector === subsectorId);
       setIndicators(filteredIndicators);
     } catch (error) {
       console.error('Error fetching indicators:', error);
@@ -128,13 +111,8 @@ const NationalCountyData = () => {
     }
   }, []);
 
-  // Fetch items based on selected indicator
   const fetchItemsByIndicator = useCallback(async (indicatorId) => {
-    if (!indicatorId) {
-      setItems([]);
-      return;
-    }
-    
+    if (!indicatorId) { setItems([]); return; }
     setItemsLoading(true);
     try {
       const response = await axios.get(`${API_BASE_URL}/items/`);
@@ -148,10 +126,8 @@ const NationalCountyData = () => {
     }
   }, []);
 
-  // Handle subsector selection (single selection)
   const handleSubsectorSelect = (subsectorId) => {
     if (selectedSubsector === subsectorId) {
-      // Deselect if same item clicked
       setSelectedSubsector(null);
       setSelectedIndicator(null);
       setSelectedItem(null);
@@ -167,10 +143,8 @@ const NationalCountyData = () => {
     setShowResults(false);
   };
 
-  // Handle indicator selection (single selection)
   const handleIndicatorSelect = (indicatorId) => {
     if (selectedIndicator === indicatorId) {
-      // Deselect if same item clicked
       setSelectedIndicator(null);
       setSelectedItem(null);
       setItems([]);
@@ -182,27 +156,16 @@ const NationalCountyData = () => {
     setShowResults(false);
   };
 
-  // Handle item selection (single selection)
   const handleItemSelect = (itemId) => {
-    if (selectedItem === itemId) {
-      setSelectedItem(null);
-    } else {
-      setSelectedItem(itemId);
-    }
+    setSelectedItem(selectedItem === itemId ? null : itemId);
     setShowResults(false);
   };
 
-  // Handle area selection (single selection)
   const handleAreaSelect = (areaId) => {
-    if (selectedArea === areaId) {
-      setSelectedArea(null);
-    } else {
-      setSelectedArea(areaId);
-    }
+    setSelectedArea(selectedArea === areaId ? null : areaId);
     setShowResults(false);
   };
 
-  // Clear all filters
   const clearAllFilters = () => {
     setSelectedSubsector(null);
     setSelectedIndicator(null);
@@ -221,37 +184,27 @@ const NationalCountyData = () => {
     showNotification('All filters cleared', 'info');
   };
 
-  // Build filter parameters
   const buildFilterParams = (page = 1, pageSizeValue = 20) => {
-    const params = {
-      page: page,
-      page_size: pageSizeValue,
-    };
-
+    const params = { page, page_size: pageSizeValue };
     if (selectedArea) params.area_id = selectedArea;
     if (selectedSubsector) params.subsector_id = selectedSubsector;
     if (selectedIndicator) params.indicator_id = selectedIndicator;
     if (selectedItem) params.item_id = selectedItem;
     if (timePeriodStart) params.time_period_min = timePeriodStart;
     if (timePeriodEnd) params.time_period_max = timePeriodEnd;
-
     return params;
   };
 
-  // Show Data - Load preview data on the right pane
   const handleShowData = async () => {
     if (!selectedSubsector && !selectedIndicator && !selectedItem) {
-      showNotification('Please select at least one Subsector, Indicator, or Item', 'warning');
+      showNotification('Please select a Subsector, Indicator, or Item', 'warning');
       return;
     }
     
     setLoading(true);
     setCurrentPage(1);
-    
     try {
       const params = buildFilterParams(1, pageSize);
-      console.log('Fetching data with params:', params);
-      
       const response = await axios.get(`${API_BASE_URL}/data/`, { params });
       const results = response.data.results || response.data;
       const count = response.data.count || 0;
@@ -261,12 +214,9 @@ const NationalCountyData = () => {
       setShowResults(true);
       showNotification(`Loaded ${results.length} records`, 'success');
       
-      // Scroll to results section
       setTimeout(() => {
-        const resultsSection = document.querySelector('.results-section');
-        if (resultsSection) {
-          resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
+        const resultsSection = document.querySelector('.results-section-modern');
+        if (resultsSection) resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }, 100);
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -276,24 +226,17 @@ const NationalCountyData = () => {
     }
   };
 
-  // Fetch data for pagination
   const fetchData = async (page = 1, pageSizeValue = 20) => {
-    if (!selectedSubsector && !selectedIndicator && !selectedItem) {
-      showNotification('Please select at least one Subsector, Indicator, or Item', 'warning');
-      return;
-    }
-    
+    if (!selectedSubsector && !selectedIndicator && !selectedItem) return;
     setLoading(true);
     try {
       const params = buildFilterParams(page, pageSizeValue);
       const response = await axios.get(`${API_BASE_URL}/data/`, { params });
       const results = response.data.results || response.data;
       const count = response.data.count || 0;
-      
       setData(results);
       setTotalCount(count);
       setCurrentPage(page);
-      showNotification(`Loaded ${results.length} records`, 'success');
     } catch (error) {
       console.error('Error fetching data:', error);
       showNotification('Failed to load data', 'error');
@@ -302,7 +245,6 @@ const NationalCountyData = () => {
     }
   };
 
-  // Export data
   const exportData = async (format = 'csv') => {
     if (!selectedSubsector && !selectedIndicator && !selectedItem) {
       showNotification('Please select filters before exporting', 'warning');
@@ -310,7 +252,6 @@ const NationalCountyData = () => {
     }
     
     setExporting(true);
-    setExportFormat(format);
     try {
       const params = buildFilterParams(1, totalCount || 10000);
       const response = await axios.get(`${API_BASE_URL}/data/`, { params });
@@ -322,13 +263,9 @@ const NationalCountyData = () => {
         return;
       }
       
-      if (format === 'csv') {
-        downloadAsCSV(allData);
-      } else if (format === 'json') {
-        downloadAsJSON(allData);
-      } else if (format === 'excel') {
-        await downloadAsExcel(allData);
-      }
+      if (format === 'csv') downloadAsCSV(allData);
+      else if (format === 'json') downloadAsJSON(allData);
+      else if (format === 'excel') await downloadAsExcel(allData);
       
       showNotification(`Exported ${allData.length} records as ${format.toUpperCase()}`, 'success');
     } catch (error) {
@@ -339,11 +276,9 @@ const NationalCountyData = () => {
     }
   };
 
-  // Download as CSV
   const downloadAsCSV = (data) => {
-    const headers = ['Area', 'Sector', 'Subsector', 'Indicator', 'Item', 'Time Period', 'Value', 'Unit', 'Flag', 'Source', 'Provider'];
+    const headers = ['Area', 'Sector', 'Subsector', 'Indicator', 'Item', 'Year', 'Value', 'Unit'];
     const csvRows = [headers.join(',')];
-    
     data.forEach(item => {
       const row = [
         `"${(item.area_name || '').replace(/"/g, '""')}"`,
@@ -354,141 +289,126 @@ const NationalCountyData = () => {
         `"${(item.time_period || '').replace(/"/g, '""')}"`,
         item.data_value || '',
         `"${(item.unit_symbol || '').replace(/"/g, '""')}"`,
-        `"${(item.flag || '').replace(/"/g, '""')}"`,
-        `"${(item.source_name || '').replace(/"/g, '""')}"`,
-        `"${(item.provider_name || '').replace(/"/g, '""')}"`,
       ];
       csvRows.push(row.join(','));
     });
-    
     const blob = new Blob([csvRows.join('\n')], { type: 'text/csv;charset=utf-8;' });
-    const url = window.URL.createObjectURL(blob);
+    const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
     a.download = `kilimostat_data_${new Date().toISOString().split('T')[0]}.csv`;
     a.click();
-    window.URL.revokeObjectURL(url);
+    URL.revokeObjectURL(url);
   };
 
-  // Download as JSON
   const downloadAsJSON = (data) => {
     const jsonStr = JSON.stringify(data, null, 2);
     const blob = new Blob([jsonStr], { type: 'application/json' });
-    const url = window.URL.createObjectURL(blob);
+    const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
     a.download = `kilimostat_data_${new Date().toISOString().split('T')[0]}.json`;
     a.click();
-    window.URL.revokeObjectURL(url);
+    URL.revokeObjectURL(url);
   };
 
-  // Download as Excel
   const downloadAsExcel = async (data) => {
     try {
       const XLSX = await import('xlsx');
       const worksheet = XLSX.utils.json_to_sheet(data.map(item => ({
-        'Area': item.area_name,
-        'Sector': item.sector_name,
-        'Subsector': item.subsector_name,
-        'Indicator': item.indicator_name,
-        'Item': item.item_name,
-        'Domain': item.domain_name,
-        'Time Period': item.time_period,
-        'Value': item.data_value,
-        'Unit': item.unit_symbol,
-        'Flag': item.flag,
-        'Source': item.source_name,
-        'Provider': item.provider_name,
+        'Area': item.area_name, 'Sector': item.sector_name, 'Subsector': item.subsector_name,
+        'Indicator': item.indicator_name, 'Item': item.item_name, 'Year': item.time_period,
+        'Value': item.data_value, 'Unit': item.unit_symbol, 'Flag': item.flag,
       })));
       const workbook = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(workbook, worksheet, 'KilimoSTAT Data');
       XLSX.writeFile(workbook, `kilimostat_data_${new Date().toISOString().split('T')[0]}.xlsx`);
     } catch (error) {
-      showNotification('Excel export requires xlsx library. Use CSV or JSON format.', 'error');
+      showNotification('Excel export requires xlsx library', 'error');
     }
   };
 
-  // Generate years
   const generateYears = () => {
     const currentYear = new Date().getFullYear();
     const years = [];
-    for (let year = 1963; year <= currentYear; year++) {
-      years.push(year);
-    }
+    for (let year = 1963; year <= currentYear; year++) years.push(year);
     return years.reverse();
   };
 
   const timePeriodYears = generateYears();
-
-  // Filtered data
-  const filteredIndicators = indicators.filter(ind =>
-    ind.name.toLowerCase().includes(indicatorSearch.toLowerCase())
-  );
-  
-  const filteredItems = items.filter(item =>
-    item.name.toLowerCase().includes(itemSearch.toLowerCase())
-  );
-  
-  const filteredAreasList = areas.filter(area => 
-    area.administrative_level === 'ADMIN_1' && 
-    area.name !== 'KENYA' &&
-    area.name.toLowerCase().includes(areaSearch.toLowerCase())
-  );
-  
+  const filteredIndicators = indicators.filter(ind => ind.name.toLowerCase().includes(indicatorSearch.toLowerCase()));
+  const filteredItems = items.filter(item => item.name.toLowerCase().includes(itemSearch.toLowerCase()));
+  const filteredAreasList = areas.filter(area => area.administrative_level === 'ADMIN_1' && area.name !== 'KENYA' && area.name.toLowerCase().includes(areaSearch.toLowerCase()));
   const nationalArea = areas.find(area => area.name === 'KENYA');
   const hasFilters = selectedSubsector || selectedIndicator || selectedItem;
-  const selectedCount = (selectedSubsector ? 1 : 0) + (selectedIndicator ? 1 : 0) + (selectedArea ? 1 : 0) + (selectedItem ? 1 : 0);
 
-  // Get selected names for display
   const getSelectedSubsectorName = () => {
     const subsector = sectors.flatMap(s => s.subsectors || []).find(s => s.id === selectedSubsector);
     return subsector ? subsector.name : '';
   };
 
-  const getSelectedIndicatorName = () => {
-    const indicator = indicators.find(i => i.id === selectedIndicator);
-    return indicator ? indicator.name : '';
-  };
-
-  const getSelectedItemName = () => {
-    const item = items.find(i => i.id === selectedItem);
-    return item ? item.name : '';
-  };
-
-  const getSelectedAreaName = () => {
-    const area = areas.find(a => a.id === selectedArea);
-    return area ? area.name : '';
-  };
+  const getSelectedIndicatorName = () => indicators.find(i => i.id === selectedIndicator)?.name || '';
+  const getSelectedItemName = () => items.find(i => i.id === selectedItem)?.name || '';
+  const getSelectedAreaName = () => areas.find(a => a.id === selectedArea)?.name || '';
 
   return (
-    <div className="national-county-data-faostat">
-      {/* Notification Toast */}
+    <div className="modern-data-page">
+      {/* Animated Notification */}
       {notification.show && (
-        <div className={`notification-toast ${notification.type}`}>
-          <i className={`fas ${notification.type === 'success' ? 'fa-check-circle' : notification.type === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle'}`}></i>
-          <span>{notification.message}</span>
+        <div className={`modern-notification ${notification.type}`}>
+          <div className="notification-content">
+            <i className={`fas ${notification.type === 'success' ? 'fa-check-circle' : notification.type === 'error' ? 'fa-exclamation-circle' : 'fa-info-circle'}`}></i>
+            <span>{notification.message}</span>
+          </div>
         </div>
       )}
 
-      {/* Header Section */}
-      <div className="faostat-header">
+      {/* Hero Section with Gradient */}
+      <div className="modern-hero">
+        <div className="hero-bg-pattern"></div>
         <div className="container">
-          <div className="header-content">
-            <div>
-              <h1>
-                <i className="fas fa-chart-line"></i> National and County Data
-              </h1>
-              <p className="header-description">
-                This module provides structured, disaggregated datasets covering agricultural indicators at both national and county levels. Data domains include crop production metrics (area, yield, output), livestock statistics, population, nutrition, input utilization, and market price dynamics.          </p>
-            </div>
-            <div className="header-stats">
-              <div className="stat-badge">
-                <i className="fas fa-database"></i>
-                <span>278+ Products</span>
+          <div className="hero-content">
+            <div className="hero-text">
+              <div className="hero-badge">
+                <i className="fas fa-chart-line"></i> Agricultural Data Platform
               </div>
-              <div className="stat-badge">
-                <i className="fas fa-calendar"></i>
-                <span>1963-2025</span>
+              <h1>National and County <span className="highlight">Data</span></h1>
+              <div className="hero-stats-modern">
+                <div className="hero-stat">
+                  <i className="fas fa-database"></i>
+                  <div>
+                    <strong>278+</strong>
+                    <span>Products</span>
+                  </div>
+                </div>
+                <div className="hero-stat">
+                  <i className="fas fa-calendar-alt"></i>
+                  <div>
+                    <strong>1963-2025</strong>
+                    <span>Time Range</span>
+                  </div>
+                </div>
+                <div className="hero-stat">
+                  <i className="fas fa-map-marker-alt"></i>
+                  <div>
+                    <strong>47</strong>
+                    <span>Counties</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div className="hero-visual">
+              <div className="floating-card card-1">
+                <i className="fas fa-chart-line"></i>
+                <span>Production Trends</span>
+              </div>
+              <div className="floating-card card-2">
+                <i className="fas fa-tractor"></i>
+                <span>Crop Yield</span>
+              </div>
+              <div className="floating-card card-3">
+                <i className="fas fa-chart-bar"></i>
+                <span>Market Data</span>
               </div>
             </div>
           </div>
@@ -496,403 +416,308 @@ const NationalCountyData = () => {
       </div>
 
       <div className="container">
-        <div className="faostat-layout">
-          {/* Left Panel - Filters */}
-          <div className="filters-panel">
-            <div className="panel-header">
-              <div className="panel-title">
+        <div className="modern-layout">
+          {/* Left Panel - Modern Filters */}
+          <div className="modern-filters-panel">
+            <div className="filters-header">
+              <div className="filters-title">
                 <i className="fas fa-sliders-h"></i>
-                <h3>FILTERS</h3>
-                {selectedCount > 0 && <span className="selected-badge">{selectedCount} active</span>}
+                <h3>Data Filters</h3>
               </div>
-              <button className="btn-clear-all" onClick={clearAllFilters}>
-                <i className="fas fa-times"></i> Clear all
-              </button>
-            </div>
-
-            {/* Quick Stats */}
-            <div className="quick-stats">
-              <div className="stat-item">
-                <span className="stat-label">Subsector:</span>
-                <span className="stat-value">{selectedSubsector ? '✓' : '—'}</span>
-              </div>
-              <div className="stat-item">
-                <span className="stat-label">Indicator:</span>
-                <span className="stat-value">{selectedIndicator ? '✓' : '—'}</span>
-              </div>
-              <div className="stat-item">
-                <span className="stat-label">Area:</span>
-                <span className="stat-value">{selectedArea ? '✓' : '—'}</span>
-              </div>
-            </div>
-
-            {/* Selected Filters Summary */}
-            {(selectedSubsector || selectedIndicator || selectedItem || selectedArea) && (
-              <div className="selected-filters-summary">
-                <div className="summary-title">Selected Filters:</div>
-                <div className="summary-list">
-                  {selectedArea && (
-                    <span className="summary-badge">
-                      <i className="fas fa-map-marker-alt"></i> {getSelectedAreaName()}
-                      <button onClick={() => handleAreaSelect(selectedArea)}>×</button>
-                    </span>
-                  )}
-                  {selectedSubsector && (
-                    <span className="summary-badge">
-                      <i className="fas fa-folder"></i> {getSelectedSubsectorName()}
-                      <button onClick={() => handleSubsectorSelect(selectedSubsector)}>×</button>
-                    </span>
-                  )}
-                  {selectedIndicator && (
-                    <span className="summary-badge">
-                      <i className="fas fa-chart-line"></i> {getSelectedIndicatorName()}
-                      <button onClick={() => handleIndicatorSelect(selectedIndicator)}>×</button>
-                    </span>
-                  )}
-                  {selectedItem && (
-                    <span className="summary-badge">
-                      <i className="fas fa-box"></i> {getSelectedItemName()}
-                      <button onClick={() => handleItemSelect(selectedItem)}>×</button>
-                    </span>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Countries/Areas Section - Single Selection */}
-            <div className="filter-section">
-              <div className="filter-section-header" onClick={() => setShowCounties(!showCounties)}>
-                <i className={`fas fa-chevron-${showCounties ? 'down' : 'right'}`}></i>
-                <i className="fas fa-map-marker-alt"></i>
-                <h4>COUNTRIES & AREAS</h4>
-              </div>
-              
-              {showCounties && (
-                <>
-                  <div className="filter-search">
-                    <input
-                      type="text"
-                      placeholder="Search county..."
-                      value={areaSearch}
-                      onChange={(e) => setAreaSearch(e.target.value)}
-                    />
-                    <i className="fas fa-search"></i>
-                  </div>
-                  
-                  {nationalArea && (
-                    <label className="filter-radio-label national">
-                      <input
-                        type="radio"
-                        name="area"
-                        checked={selectedArea === nationalArea.id}
-                        onChange={() => handleAreaSelect(nationalArea.id)}
-                      />
-                      <span className="radio-custom"></span>
-                      <span className="radio-text">
-                        <strong>{nationalArea.name}</strong>
-                        <span className="area-level-badge">National</span>
-                      </span>
-                    </label>
-                  )}
-                  
-                  <div className="filter-list">
-                    {filteredAreasList.map(area => (
-                      <label key={area.id} className="filter-radio-label">
-                        <input
-                          type="radio"
-                          name="area"
-                          checked={selectedArea === area.id}
-                          onChange={() => handleAreaSelect(area.id)}
-                        />
-                        <span className="radio-custom"></span>
-                        <span className="radio-text">{area.name}</span>
-                      </label>
-                    ))}
-                  </div>
-                </>
+              {(selectedSubsector || selectedIndicator || selectedArea || selectedItem) && (
+                <button className="clear-all-btn" onClick={clearAllFilters}>
+                  <i className="fas fa-times-circle"></i> Clear all
+                </button>
               )}
             </div>
 
-            {/* Sectors and Subsectors Accordion - Single Selection */}
-            <div className="filter-section">
-              <div className="filter-section-header">
-                <i className="fas fa-chart-pie"></i>
-                <h4>ITEMS AGGREGATED</h4>
-              </div>
-              <div className="filter-search">
-                <input
-                  type="text"
-                  placeholder="Search subsector..."
-                  value={subsectorSearch}
-                  onChange={(e) => setSubsectorSearch(e.target.value)}
-                />
-                <i className="fas fa-search"></i>
-              </div>
-              <div className="sectors-accordion">
-                {sectors.map(sector => {
-                  const displaySubsectors = sector.subsectors?.filter(s => 
-                    !subsectorSearch || s.name.toLowerCase().includes(subsectorSearch.toLowerCase())
-                  ) || [];
-                  
-                  if (displaySubsectors.length === 0 && subsectorSearch) return null;
-                  
-                  return (
-                    <div key={sector.id} className="sector-item">
-                      <div 
-                        className="sector-header"
-                        onClick={() => setExpandedSectors(prev => ({ ...prev, [sector.id]: !prev[sector.id] }))}
-                      >
-                        <i className={`fas fa-chevron-${expandedSectors[sector.id] ? 'down' : 'right'}`}></i>
-                        <span className="sector-name">{sector.name}</span>
-                        <span className="sector-count">{displaySubsectors.length}</span>
-                      </div>
-                      {expandedSectors[sector.id] && (
-                        <div className="subsectors-list">
-                          {displaySubsectors.map(subsector => (
-                            <label key={subsector.id} className="filter-radio-label subsector-item">
-                              <input
-                                type="radio"
-                                name="subsector"
-                                checked={selectedSubsector === subsector.id}
-                                onChange={() => handleSubsectorSelect(subsector.id)}
-                              />
-                              <span className="radio-custom"></span>
-                              <span className="radio-text">{subsector.name}</span>
-                            </label>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            {/* Indicators Section - Single Selection */}
-            {selectedSubsector && (
-              <div className="filter-section">
-                <div className="filter-section-header">
-                  <i className="fas fa-chart-line"></i>
-                  <h4>INDICATORS</h4>
-                  {indicatorsLoading && <i className="fas fa-spinner fa-spin"></i>}
-                </div>
-                <div className="filter-search">
-                  <input
-                    type="text"
-                    placeholder="Search indicators..."
-                    value={indicatorSearch}
-                    onChange={(e) => setIndicatorSearch(e.target.value)}
-                  />
-                  <i className="fas fa-search"></i>
-                </div>
-                <div className="filter-list">
-                  {filteredIndicators.map(indicator => (
-                    <label key={indicator.id} className="filter-radio-label">
-                      <input
-                        type="radio"
-                        name="indicator"
-                        checked={selectedIndicator === indicator.id}
-                        onChange={() => handleIndicatorSelect(indicator.id)}
-                      />
-                      <span className="radio-custom"></span>
-                      <span className="radio-text">{indicator.name}</span>
-                    </label>
-                  ))}
-                  {filteredIndicators.length === 0 && !indicatorsLoading && (
-                    <div className="no-results">
-                      <i className="fas fa-search"></i> No indicators found
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Items Section - Single Selection */}
-            {selectedIndicator && (
-              <div className="filter-section">
-                <div className="filter-section-header">
-                  <i className="fas fa-box"></i>
-                  <h4>ITEMS</h4>
-                  {itemsLoading && <i className="fas fa-spinner fa-spin"></i>}
-                </div>
-                <div className="filter-search">
-                  <input
-                    type="text"
-                    placeholder="Search items..."
-                    value={itemSearch}
-                    onChange={(e) => setItemSearch(e.target.value)}
-                  />
-                  <i className="fas fa-search"></i>
-                </div>
-                <div className="filter-list">
-                  {filteredItems.map(item => (
-                    <label key={item.id} className="filter-radio-label">
-                      <input
-                        type="radio"
-                        name="item"
-                        checked={selectedItem === item.id}
-                        onChange={() => handleItemSelect(item.id)}
-                      />
-                      <span className="radio-custom"></span>
-                      <span className="radio-text">{item.name}</span>
-                    </label>
-                  ))}
-                  {filteredItems.length === 0 && !itemsLoading && (
-                    <div className="no-results">
-                      <i className="fas fa-search"></i> No items found
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Time Period Section */}
-            <div className="filter-section">
-              <div className="filter-section-header">
-                <i className="fas fa-calendar-alt"></i>
-                <h4>YEARS</h4>
-              </div>
-              <div className="time-range-selector">
-                <select value={timePeriodStart} onChange={(e) => setTimePeriodStart(e.target.value)}>
-                  <option value="">From year</option>
-                  {timePeriodYears.map(year => (
-                    <option key={year} value={year}>{year}</option>
-                  ))}
-                </select>
-                <span className="range-separator">→</span>
-                <select value={timePeriodEnd} onChange={(e) => setTimePeriodEnd(e.target.value)}>
-                  <option value="">To year</option>
-                  {timePeriodYears.map(year => (
-                    <option key={year} value={year}>{year}</option>
-                  ))}
-                </select>
-              </div>
-            </div>
-
-            {/* Show Data Button */}
-            <div className="filter-actions">
-              <button 
-                className="btn-show-data" 
-                onClick={handleShowData}
-                disabled={!hasFilters || loading}
-              >
-                {loading ? (
-                  <>
-                    <i className="fas fa-spinner fa-spin"></i> Loading...
-                  </>
-                ) : (
-                  <>
-                    <i className="fas fa-chart-line"></i> Show Data
-                  </>
+            {/* Active Filters Tags */}
+            {(selectedArea || selectedSubsector || selectedIndicator || selectedItem) && (
+              <div className="active-filters-tags">
+                <span className="tags-label">Active:</span>
+                {selectedArea && (
+                  <div className="filter-tag">
+                    <i className="fas fa-map-marker-alt"></i>
+                    <span>{getSelectedAreaName()}</span>
+                    <button onClick={() => handleAreaSelect(selectedArea)}>×</button>
+                  </div>
                 )}
+                {selectedSubsector && (
+                  <div className="filter-tag">
+                    <i className="fas fa-folder"></i>
+                    <span>{getSelectedSubsectorName()}</span>
+                    <button onClick={() => handleSubsectorSelect(selectedSubsector)}>×</button>
+                  </div>
+                )}
+                {selectedIndicator && (
+                  <div className="filter-tag">
+                    <i className="fas fa-chart-line"></i>
+                    <span>{getSelectedIndicatorName()}</span>
+                    <button onClick={() => handleIndicatorSelect(selectedIndicator)}>×</button>
+                  </div>
+                )}
+                {selectedItem && (
+                  <div className="filter-tag">
+                    <i className="fas fa-box"></i>
+                    <span>{getSelectedItemName()}</span>
+                    <button onClick={() => handleItemSelect(selectedItem)}>×</button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Area Selection */}
+            <div className="filter-group-modern">
+              <div className="filter-group-header" onClick={() => setShowCounties(!showCounties)}>
+                <i className={`fas fa-chevron-${showCounties ? 'down' : 'right'}`}></i>
+                <i className="fas fa-map-marker-alt group-icon"></i>
+                <span>Location</span>
+                {selectedArea && <span className="group-badge">1 selected</span>}
+              </div>
+              {showCounties && (
+                <div className="filter-group-content">
+                  <div className="search-input">
+                    <i className="fas fa-search"></i>
+                    <input type="text" placeholder="Search county..." value={areaSearch} onChange={(e) => setAreaSearch(e.target.value)} />
+                  </div>
+                  <div className="options-list">
+                    {nationalArea && (
+                      <label className={`option-radio ${selectedArea === nationalArea.id ? 'selected' : ''}`}>
+                        <input type="radio" name="area" checked={selectedArea === nationalArea.id} onChange={() => handleAreaSelect(nationalArea.id)} />
+                        <span className="radio-indicator"></span>
+                        <span className="option-text">
+                          <strong>{nationalArea.name}</strong>
+                          <span className="badge-national">National</span>
+                        </span>
+                      </label>
+                    )}
+                    {filteredAreasList.map(area => (
+                      <label key={area.id} className={`option-radio ${selectedArea === area.id ? 'selected' : ''}`}>
+                        <input type="radio" name="area" checked={selectedArea === area.id} onChange={() => handleAreaSelect(area.id)} />
+                        <span className="radio-indicator"></span>
+                        <span className="option-text">{area.name}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Subsector Selection */}
+            <div className="filter-group-modern">
+              <div className="filter-group-header">
+                <i className="fas fa-chart-pie group-icon"></i>
+                <span>Items Aggregated</span>
+              </div>
+              <div className="filter-group-content">
+                <div className="search-input">
+                  <i className="fas fa-search"></i>
+                  <input type="text" placeholder="Search subsector..." value={subsectorSearch} onChange={(e) => setSubsectorSearch(e.target.value)} />
+                </div>
+                <div className="accordion-list">
+                  {sectors.map(sector => {
+                    const displaySubsectors = sector.subsectors?.filter(s => !subsectorSearch || s.name.toLowerCase().includes(subsectorSearch.toLowerCase())) || [];
+                    if (displaySubsectors.length === 0 && subsectorSearch) return null;
+                    return (
+                      <div key={sector.id} className="accordion-item">
+                        <div className="accordion-header" onClick={() => setExpandedSectors(prev => ({ ...prev, [sector.id]: !prev[sector.id] }))}>
+                          <i className={`fas fa-chevron-${expandedSectors[sector.id] ? 'down' : 'right'}`}></i>
+                          <span>{sector.name}</span>
+                          <span className="item-count">{displaySubsectors.length}</span>
+                        </div>
+                        {expandedSectors[sector.id] && (
+                          <div className="accordion-content">
+                            {displaySubsectors.map(subsector => (
+                              <label key={subsector.id} className={`option-radio ${selectedSubsector === subsector.id ? 'selected' : ''}`}>
+                                <input type="radio" name="subsector" checked={selectedSubsector === subsector.id} onChange={() => handleSubsectorSelect(subsector.id)} />
+                                <span className="radio-indicator"></span>
+                                <span className="option-text">{subsector.name}</span>
+                              </label>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            {/* Indicators Section */}
+            {selectedSubsector && (
+              <div className="filter-group-modern animated-fade">
+                <div className="filter-group-header">
+                  <i className="fas fa-chart-line group-icon"></i>
+                  <span>Indicators</span>
+                  {indicatorsLoading && <i className="fas fa-spinner fa-spin loading-icon"></i>}
+                </div>
+                <div className="filter-group-content">
+                  <div className="search-input">
+                    <i className="fas fa-search"></i>
+                    <input type="text" placeholder="Search indicators..." value={indicatorSearch} onChange={(e) => setIndicatorSearch(e.target.value)} />
+                  </div>
+                  <div className="options-list">
+                    {filteredIndicators.map(indicator => (
+                      <label key={indicator.id} className={`option-radio ${selectedIndicator === indicator.id ? 'selected' : ''}`}>
+                        <input type="radio" name="indicator" checked={selectedIndicator === indicator.id} onChange={() => handleIndicatorSelect(indicator.id)} />
+                        <span className="radio-indicator"></span>
+                        <span className="option-text">{indicator.name}</span>
+                      </label>
+                    ))}
+                    {filteredIndicators.length === 0 && !indicatorsLoading && (
+                      <div className="no-results-modern">
+                        <i className="fas fa-search"></i> No indicators found
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Items Section */}
+            {selectedIndicator && (
+              <div className="filter-group-modern animated-fade">
+                <div className="filter-group-header">
+                  <i className="fas fa-box group-icon"></i>
+                  <span>Items</span>
+                  {itemsLoading && <i className="fas fa-spinner fa-spin loading-icon"></i>}
+                </div>
+                <div className="filter-group-content">
+                  <div className="search-input">
+                    <i className="fas fa-search"></i>
+                    <input type="text" placeholder="Search items..." value={itemSearch} onChange={(e) => setItemSearch(e.target.value)} />
+                  </div>
+                  <div className="options-list">
+                    {filteredItems.map(item => (
+                      <label key={item.id} className={`option-radio ${selectedItem === item.id ? 'selected' : ''}`}>
+                        <input type="radio" name="item" checked={selectedItem === item.id} onChange={() => handleItemSelect(item.id)} />
+                        <span className="radio-indicator"></span>
+                        <span className="option-text">{item.name}</span>
+                      </label>
+                    ))}
+                    {filteredItems.length === 0 && !itemsLoading && (
+                      <div className="no-results-modern">
+                        <i className="fas fa-search"></i> No items found
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Time Period */}
+            <div className="filter-group-modern">
+              <div className="filter-group-header">
+                <i className="fas fa-calendar-alt group-icon"></i>
+                <span>Time Period</span>
+              </div>
+              <div className="filter-group-content">
+                <div className="range-selector">
+                  <select value={timePeriodStart} onChange={(e) => setTimePeriodStart(e.target.value)}>
+                    <option value="">From Year</option>
+                    {timePeriodYears.map(year => <option key={year} value={year}>{year}</option>)}
+                  </select>
+                  <span className="range-arrow">→</span>
+                  <select value={timePeriodEnd} onChange={(e) => setTimePeriodEnd(e.target.value)}>
+                    <option value="">To Year</option>
+                    {timePeriodYears.map(year => <option key={year} value={year}>{year}</option>)}
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {/* Action Buttons */}
+            <div className="filter-actions-modern">
+              <button className="btn-show-data-modern" onClick={handleShowData} disabled={!hasFilters || loading}>
+                {loading ? <><i className="fas fa-spinner fa-spin"></i> Loading...</> : <><i className="fas fa-chart-line"></i> Show Data</>}
               </button>
-              <button 
-                className="btn-download-data" 
-                onClick={() => exportData('csv')}
-                disabled={!hasFilters || exporting || !showResults}
-              >
-                <i className={`fas ${exporting && exportFormat === 'csv' ? 'fa-spinner fa-spin' : 'fa-download'}`}></i>
-                {exporting && exportFormat === 'csv' ? 'Exporting...' : 'Download CSV'}
-              </button>
-              <div className="download-options">
-                <button className="btn-download-option" onClick={() => exportData('json')} disabled={!hasFilters || exporting || !showResults}>
-                  JSON
+              <div className="export-buttons">
+                <button className="btn-export-modern csv" onClick={() => exportData('csv')} disabled={!hasFilters || exporting || !showResults}>
+                  <i className="fas fa-file-csv"></i> CSV
                 </button>
-                <button className="btn-download-option" onClick={() => exportData('excel')} disabled={!hasFilters || exporting || !showResults}>
-                  Excel
+                <button className="btn-export-modern json" onClick={() => exportData('json')} disabled={!hasFilters || exporting || !showResults}>
+                  <i className="fas fa-file-code"></i> JSON
+                </button>
+                <button className="btn-export-modern excel" onClick={() => exportData('excel')} disabled={!hasFilters || exporting || !showResults}>
+                  <i className="fas fa-file-excel"></i> Excel
                 </button>
               </div>
             </div>
           </div>
 
           {/* Right Panel - Results */}
-          <div className="results-panel">
+          <div className="modern-results-panel">
             {/* Info Card */}
-            <div className="info-card">
+            <div className="info-card-modern">
               <div className="info-icon">
-                <i className="fas fa-info-circle"></i>
+                <i className="fas fa-chart-line"></i>
               </div>
-              <div className="info-content">
-                <h4>National and County Data</h4>
-                <p>
-                 Access key agricultural statistics across Kenya at national and county levels. Explore trends, compare regions, and download data to support informed decision-making.
+              <div className="info-text">
+                <h4>Agricultural Data Explorer</h4>
+                <p>Select filters from the left panel to explore Kenya's agricultural statistics. <br /> <br />
+               
                 </p>
-                <a href="#" className="info-link">Show More <i className="fas fa-arrow-right"></i></a>
               </div>
             </div>
 
-            {/* Bulk Downloads Section */}
-            <div className="bulk-downloads">
-              <h4>
-                <i className="fas fa-database"></i> BULK DOWNLOADS
-              </h4>
-              <div className="bulk-downloads-grid">
-                <div className="bulk-item" onClick={() => exportData('csv')}>
-                  <i className="fas fa-file-csv"></i>
-                  <span>All Data</span>
-                  <span className="bulk-size">CSV</span>
-                </div>
-                <div className="bulk-item" onClick={() => exportData('json')}>
-                  <i className="fas fa-file-code"></i>
-                  <span>All Data</span>
-                  <span className="bulk-size">JSON</span>
-                </div>
-                <div className="bulk-item" onClick={() => exportData('excel')}>
-                  <i className="fas fa-file-excel"></i>
-                  <span>All Data</span>
-                  <span className="bulk-size">Excel</span>
-                </div>
+            {/* Bulk Downloads */}
+            <div className="bulk-downloads-modern">
+              <h4><i className="fas fa-database"></i>Downloads</h4>
+              <div className="bulk-buttons">
+                <button onClick={() => exportData('csv')}><i className="fas fa-file-csv"></i> CSV</button>
+                <button onClick={() => exportData('json')}><i className="fas fa-file-code"></i> JSON</button>
+                <button onClick={() => exportData('excel')}><i className="fas fa-file-excel"></i> Excel</button>
+                <button style={{ padding: '8px 20px' }}><Link to="/visualization-tab">
+                            <i className="fas fa-chart-line"></i> Visualize </Link></button>
+
+                <button style={{ padding: '8px 20px' }}><Link to="/visualization">
+                            <i className="fas fa-chart-line"></i> Trends </Link></button>
               </div>
             </div>
 
             {/* Results Section */}
-            <div className="results-section">
-              <div className="results-header">
+            <div className="results-section-modern">
+              <div className="results-header-modern">
                 <div className="results-title">
-                  <h4>
-                    <i className="fas fa-chart-bar"></i> Results
-                    {showResults && <span className="result-count">{totalCount.toLocaleString()} records</span>}
-                  </h4>
-                  <div className="tab-buttons">
-                    <button className={`tab-btn ${activeTab === 'table' ? 'active' : ''}`} onClick={() => setActiveTab('table')}>
-                      <i className="fas fa-table"></i> Table
-                    </button>
-                  </div>
+                  <i className="fas fa-table"></i>
+                  <h4>Data Results</h4>
+                  {showResults && <span className="results-badge">{totalCount.toLocaleString()} records</span>}
                 </div>
                 {showResults && (
-                  <button className="btn-export" onClick={() => exportData('csv')} disabled={exporting}>
-                    <i className="fas fa-download"></i> Export
+                  <button className="refresh-btn" onClick={() => fetchData(currentPage, pageSize)} disabled={loading}>
+                    <i className="fas fa-sync-alt"></i>
                   </button>
                 )}
               </div>
 
               {!showResults ? (
-                <div className="no-data-preview">
-                  <i className="fas fa-chart-line"></i>
+                <div className="empty-state-modern">
+                  <div className="empty-icon">
+                    <i className="fas fa-chart-line"></i>
+                  </div>
                   <h4>No Data Loaded</h4>
-                  <p>Select filters and click "Show Data" to view agricultural statistics.</p>
-                  <div className="preview-hint">
+                  <p>Select a subsector, indicator, or item and click "Show Data" to view agricultural statistics.</p>
+                  <div className="empty-hint">
                     <i className="fas fa-lightbulb"></i>
-                    <span>Hint: Start by selecting a subsector from the Items Aggregated section</span>
+                    <span>Start by selecting a subsector from the Items Aggregated section</span>
                   </div>
                 </div>
               ) : loading ? (
-                <div className="loading-spinner">
-                  <div className="spinner"></div>
-                  <p>Loading data...</p>
+                <div className="loading-state">
+                  <div className="modern-spinner"></div>
+                  <p>Loading your data...</p>
                 </div>
               ) : data.length === 0 ? (
-                <div className="no-data">
+                <div className="empty-state-modern">
                   <i className="fas fa-inbox"></i>
-                  <p>No data found. Try adjusting your filters.</p>
-                  <button className="btn-clear-filters-mini" onClick={clearAllFilters}>
-                    Clear Filters
-                  </button>
+                  <h4>No Results Found</h4>
+                  <p>Try adjusting your filters or selecting different options.</p>
+                  <button className="clear-filters-btn" onClick={clearAllFilters}>Clear All Filters</button>
                 </div>
               ) : (
                 <>
-                  <div className="table-responsive">
-                    <table className="data-table">
+                  <div className="table-wrapper">
+                    <table className="modern-data-table">
                       <thead>
                         <tr>
                           <th>Area</th>
@@ -901,33 +726,19 @@ const NationalCountyData = () => {
                           <th>Year</th>
                           <th>Value</th>
                           <th>Unit</th>
-                          <th>Actions</th>
+                          <th></th>
                         </tr>
                       </thead>
                       <tbody>
                         {data.map((item) => (
-                          <tr key={item.id}>
-                            <td data-label="Area">{item.area_name}</td>
+                          <tr key={item.id} onClick={() => { setPreviewDetailsData(item); setShowPreviewDetailsModal(true); }}>
+                            <td data-label="Area"><span className="cell-value">{item.area_name}</span></td>
                             <td data-label="Indicator">{item.indicator_name}</td>
                             <td data-label="Item">{item.item_name}</td>
                             <td data-label="Year">{item.time_period}</td>
-                            <td data-label="Value" className="data-value">
-                              {item.data_value?.toLocaleString()}
-                              {item.flag && <span className="flag-badge">{item.flag}</span>}
-                            </td>
+                            <td data-label="Value" className="value-cell">{item.data_value?.toLocaleString()}{item.flag && <span className="flag-badge-modern">{item.flag}</span>}</td>
                             <td data-label="Unit">{item.unit_symbol}</td>
-                            <td data-label="Actions">
-                              <button 
-                                className="btn-view-details" 
-                                onClick={() => {
-                                  setPreviewDetailsData(item);
-                                  setShowPreviewDetailsModal(true);
-                                }}
-                                title="View Details"
-                              >
-                                <i className="fas fa-info-circle"></i>
-                              </button>
-                            </td>
+                            <td className="action-cell"><button className="view-details-btn"><i className="fas fa-info-circle"></i></button></td>
                           </tr>
                         ))}
                       </tbody>
@@ -936,190 +747,87 @@ const NationalCountyData = () => {
 
                   {/* Pagination */}
                   {totalCount > pageSize && (
-                    <div className="pagination">
-                      <button
-                        onClick={() => fetchData(currentPage - 1, pageSize)}
-                        disabled={currentPage === 1}
-                      >
+                    <div className="pagination-modern">
+                      <button onClick={() => fetchData(currentPage - 1, pageSize)} disabled={currentPage === 1}>
                         <i className="fas fa-chevron-left"></i> Previous
                       </button>
-                      <div className="pagination-info">
-                        <span className="page-info">
-                          Page {currentPage} of {Math.ceil(totalCount / pageSize)}
-                        </span>
-                        <span className="total-info">
-                          ({totalCount.toLocaleString()} total records)
-                        </span>
-                      </div>
-                      <button
-                        onClick={() => fetchData(currentPage + 1, pageSize)}
-                        disabled={currentPage === Math.ceil(totalCount / pageSize)}
-                      >
+                      <span className="page-info">Page {currentPage} of {Math.ceil(totalCount / pageSize)}</span>
+                      <button onClick={() => fetchData(currentPage + 1, pageSize)} disabled={currentPage === Math.ceil(totalCount / pageSize)}>
                         Next <i className="fas fa-chevron-right"></i>
                       </button>
-                      <select
-                        value={pageSize}
-                        onChange={(e) => {
-                          setPageSize(Number(e.target.value));
-                          fetchData(1, Number(e.target.value));
-                        }}
-                        className="page-size-select"
-                      >
-                        <option value={10}>10 per page</option>
-                        <option value={20}>20 per page</option>
-                        <option value={50}>50 per page</option>
-                        <option value={100}>100 per page</option>
+                      <select value={pageSize} onChange={(e) => { setPageSize(Number(e.target.value)); fetchData(1, Number(e.target.value)); }} className="page-size-select">
+                        <option value={10}>10 / page</option>
+                        <option value={20}>20 / page</option>
+                        <option value={50}>50 / page</option>
+                        <option value={100}>100 / page</option>
                       </select>
                     </div>
                   )}
                 </>
               )}
             </div>
-
-            {/* Last Update Info */}
-            <div className="last-update">
-              <i className="fas fa-clock"></i>
-              <span>Last Update: {new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}</span>
-              <a href="#" className="update-link" onClick={(e) => { e.preventDefault(); if (hasFilters) handleShowData(); }}>
-                <i className="fas fa-sync-alt"></i> Refresh
-              </a>
-            </div>
           </div>
         </div>
       </div>
 
-      {/* Preview Details Modal */}
+      {/* Details Modal */}
       {showPreviewDetailsModal && previewDetailsData && (
-        <div className="modal-overlay nested-modal" onClick={() => setShowPreviewDetailsModal(false)}>
-          <div className="modal-content preview-details-modal" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3>
-                <i className="fas fa-info-circle"></i> Data Details
-              </h3>
-              <button className="modal-close" onClick={() => setShowPreviewDetailsModal(false)}>
-                <i className="fas fa-times"></i>
-              </button>
+        <div className="modern-modal-overlay" onClick={() => setShowPreviewDetailsModal(false)}>
+          <div className="modern-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="modal-header-modern">
+              <h3><i className="fas fa-info-circle"></i> Record Details</h3>
+              <button className="modal-close-btn" onClick={() => setShowPreviewDetailsModal(false)}><i className="fas fa-times"></i></button>
             </div>
-            <div className="modal-body">
-              <div className="details-grid">
-                <div className="detail-item full-width">
-                  <div className="detail-header">
-                    <i className="fas fa-map-marker-alt"></i> Location Information
-                  </div>
-                  <div className="detail-content">
-                    <div className="detail-row">
-                      <span className="detail-label">Area:</span>
-                      <span className="detail-value">{previewDetailsData.area_name}</span>
-                    </div>
-                    <div className="detail-row">
-                      <span className="detail-label">Area Level:</span>
-                      <span className="detail-value">{previewDetailsData.area_level}</span>
-                    </div>
+            <div className="modal-body-modern">
+              <div className="details-grid-modern">
+                <div className="detail-card">
+                  <div className="detail-icon"><i className="fas fa-map-marker-alt"></i></div>
+                  <div className="detail-info">
+                    <label>Area</label>
+                    <p>{previewDetailsData.area_name}</p>
+                    <span className="detail-sub">{previewDetailsData.area_level}</span>
                   </div>
                 </div>
-
-                <div className="detail-item full-width">
-                  <div className="detail-header">
-                    <i className="fas fa-chart-line"></i> Agricultural Data
-                  </div>
-                  <div className="detail-content">
-                    <div className="detail-row">
-                      <span className="detail-label">Sector:</span>
-                      <span className="detail-value">{previewDetailsData.sector_name}</span>
-                    </div>
-                    <div className="detail-row">
-                      <span className="detail-label">Subsector:</span>
-                      <span className="detail-value">{previewDetailsData.subsector_name}</span>
-                    </div>
-                    <div className="detail-row">
-                      <span className="detail-label">Indicator:</span>
-                      <span className="detail-value">{previewDetailsData.indicator_name}</span>
-                    </div>
-                    <div className="detail-row">
-                      <span className="detail-label">Item:</span>
-                      <span className="detail-value">{previewDetailsData.item_name}</span>
-                    </div>
-                    <div className="detail-row">
-                      <span className="detail-label">Domain:</span>
-                      <span className="detail-value">{previewDetailsData.domain_name}</span>
-                    </div>
+                <div className="detail-card">
+                  <div className="detail-icon"><i className="fas fa-chart-line"></i></div>
+                  <div className="detail-info">
+                    <label>Indicator</label>
+                    <p>{previewDetailsData.indicator_name}</p>
                   </div>
                 </div>
-
-                <div className="detail-item">
-                  <div className="detail-header">
-                    <i className="fas fa-chart-simple"></i> Value Information
-                  </div>
-                  <div className="detail-content">
-                    <div className="detail-row">
-                      <span className="detail-label">Time Period:</span>
-                      <span className="detail-value">{previewDetailsData.time_period}</span>
-                    </div>
-                    <div className="detail-row">
-                      <span className="detail-label">Value:</span>
-                      <span className="detail-value highlight">
-                        {previewDetailsData.data_value?.toLocaleString()} {previewDetailsData.unit_symbol}
-                      </span>
-                    </div>
-                    <div className="detail-row">
-                      <span className="detail-label">Unit:</span>
-                      <span className="detail-value">{previewDetailsData.unit_name}</span>
-                    </div>
-                    <div className="detail-row">
-                      <span className="detail-label">Flag:</span>
-                      <span className="detail-value">{previewDetailsData.flag || 'N/A'}</span>
-                    </div>
+                <div className="detail-card">
+                  <div className="detail-icon"><i className="fas fa-box"></i></div>
+                  <div className="detail-info">
+                    <label>Item</label>
+                    <p>{previewDetailsData.item_name}</p>
                   </div>
                 </div>
-
-                <div className="detail-item">
-                  <div className="detail-header">
-                    <i className="fas fa-building"></i> Source Information
-                  </div>
-                  <div className="detail-content">
-                    <div className="detail-row">
-                      <span className="detail-label">Source:</span>
-                      <span className="detail-value">{previewDetailsData.source_name}</span>
-                    </div>
-                    <div className="detail-row">
-                      <span className="detail-label">Provider:</span>
-                      <span className="detail-value">{previewDetailsData.provider_name}</span>
-                    </div>
+                <div className="detail-card">
+                  <div className="detail-icon"><i className="fas fa-calendar"></i></div>
+                  <div className="detail-info">
+                    <label>Time Period</label>
+                    <p>{previewDetailsData.time_period}</p>
                   </div>
                 </div>
-
-                {previewDetailsData.notes && (
-                  <div className="detail-item full-width">
-                    <div className="detail-header">
-                      <i className="fas fa-sticky-note"></i> Additional Notes
-                    </div>
-                    <div className="detail-content">
-                      <div className="detail-row">
-                        <span className="detail-value notes-text">{previewDetailsData.notes}</span>
-                      </div>
-                    </div>
+                <div className="detail-card highlight">
+                  <div className="detail-icon"><i className="fas fa-chart-simple"></i></div>
+                  <div className="detail-info">
+                    <label>Value</label>
+                    <p className="value-highlight">{previewDetailsData.data_value?.toLocaleString()} {previewDetailsData.unit_symbol}</p>
                   </div>
-                )}
-
-                <div className="detail-item full-width">
-                  <div className="detail-header">
-                    <i className="fas fa-clock"></i> Metadata
-                  </div>
-                  <div className="detail-content">
-                    <div className="detail-row">
-                      <span className="detail-label">Created:</span>
-                      <span className="detail-value">{new Date(previewDetailsData.created_at).toLocaleString()}</span>
-                    </div>
-                    <div className="detail-row">
-                      <span className="detail-label">Last Updated:</span>
-                      <span className="detail-value">{new Date(previewDetailsData.updated_at).toLocaleString()}</span>
-                    </div>
+                </div>
+                <div className="detail-card">
+                  <div className="detail-icon"><i className="fas fa-building"></i></div>
+                  <div className="detail-info">
+                    <label>Source</label>
+                    <p>{previewDetailsData.source_name}</p>
+                    <span className="detail-sub">{previewDetailsData.provider_name}</span>
                   </div>
                 </div>
               </div>
             </div>
-            <div className="modal-footer">
-              <button className="btn-close" onClick={() => setShowPreviewDetailsModal(false)}>Close</button>
+            <div className="modal-footer-modern">
+              <button className="btn-close-modal" onClick={() => setShowPreviewDetailsModal(false)}>Close</button>
             </div>
           </div>
         </div>

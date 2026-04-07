@@ -52,10 +52,10 @@ const Header = ({
                 </div>
                 <div className="lang-dropdown">
                   <a href="#" onClick={(e) => { e.preventDefault(); onLanguageChange('EN', 'English'); }}>
-                    <i className="fas fa-flag-usa"></i> English
+                    <i className="fa-solid fa-language"></i> English
                   </a>
                   <a href="#" onClick={(e) => { e.preventDefault(); onLanguageChange('SW', 'Kiswahili'); }}>
-                    <i className="fas fa-flag-kenya"></i> Kiswahili
+                    <i className="fa-solid fa-language"></i> Kiswahili
                   </a>
                 </div>
               </div>
@@ -110,7 +110,13 @@ const Header = ({
               <a href="#" className="nav-link">
                 <i className="fas fa-chart-pie"></i> Dashboards <i className="fas fa-chevron-down"></i>
               </a>
-              <div className="dropdown-menu">
+              <div className="dropdown-menu">                 
+                 <Link to="/visualization-tab">
+                  <i className="fas fa-chart-line"></i> County and National Data Visualization
+                </Link>     
+                <Link to="/visualization">
+                  <i className="fas fa-chart-line"></i> Trends
+                </Link>          
                 <a href="#"><i className="fas fa-chart-line"></i> KIAMIS</a>
                 <a href="#"><i className="fas fa-chart-line"></i> KAMIS</a>
                 <a href="#"><i className="fas fa-tractor"></i> Crop Production</a>

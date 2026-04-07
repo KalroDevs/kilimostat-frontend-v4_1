@@ -14,6 +14,10 @@ import Footer from './components/Footer';
 import FoodSystemsRedirect from './components/FoodSystemsRedirect';
 import About from './components/About';
 import NationalCountyData from './components/NationalCountyData';
+import VisualizationPage from './components/VisualizationPage';
+
+import VisualizeDataTab from './components/VisualizeDataTab';
+
 import './styles/App.css';
 
 // Main App Content Component
@@ -70,8 +74,8 @@ const AppContent = () => {
     const path = location.pathname;
     if (path === '/') return 'home';
     if (path === '/about') return 'about';
-    if (path === '/food-systems') return 'food-systems';
-    if (path === '/national-county-data') return 'national-county-data';
+    if (path === '/visualization') return 'visualization';
+    if (path === '/visualization-tab') return 'visualization-tab';
     return 'home';
   };
 
@@ -134,6 +138,8 @@ const AppContent = () => {
           <Route path="/about" element={<About />} />
           <Route path="/food-systems" element={<FoodSystemsRedirect />} />
           <Route path="/national-county-data" element={<NationalCountyData />} />
+          <Route path="/visualization" element={<VisualizationPage />} />
+          <Route path="/visualization-tab" element={<VisualizeDataTab />} />
         </Routes>
       </main>
       
