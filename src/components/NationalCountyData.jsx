@@ -1,12 +1,13 @@
 // components/NationalCountyData.jsx
 import React, { useState, useEffect, useCallback } from 'react';
 import axios from 'axios';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link } from 'react-router-dom';
+import './NationalCountyData.css';
 
 const NationalCountyData = () => {
   // State for sectors and subsectors
   const [sectors, setSectors] = useState([]);
-  const [expandedSectors, setExpandedSectors] = useState({});
+  const [selectedSector, setSelectedSector] = useState(null);
   const [selectedSubsector, setSelectedSubsector] = useState(null);
   const [subsectorSearch, setSubsectorSearch] = useState('');
   
@@ -16,17 +17,17 @@ const NationalCountyData = () => {
   const [indicatorsLoading, setIndicatorsLoading] = useState(false);
   const [indicatorSearch, setIndicatorSearch] = useState('');
   
-  // State for areas
-  const [areas, setAreas] = useState([]);
-  const [selectedArea, setSelectedArea] = useState(null);
-  const [areaSearch, setAreaSearch] = useState('');
-  const [showCounties, setShowCounties] = useState(true);
-  
   // State for items
   const [items, setItems] = useState([]);
   const [selectedItem, setSelectedItem] = useState(null);
   const [itemsLoading, setItemsLoading] = useState(false);
   const [itemSearch, setItemSearch] = useState('');
+  
+  // State for areas
+  const [areas, setAreas] = useState([]);
+  const [selectedArea, setSelectedArea] = useState(null);
+  const [areaSearch, setAreaSearch] = useState('');
+  const [showCountySelector, setShowCountySelector] = useState(false);
   
   // State for time period
   const [timePeriodStart, setTimePeriodStart] = useState('');
@@ -76,9 +77,6 @@ const NationalCountyData = () => {
       }));
       
       setSectors(sectorsWithSubsectors);
-      const initialExpanded = {};
-      sectorsWithSubsectors.forEach(sector => { initialExpanded[sector.id] = false; });
-      setExpandedSectors(initialExpanded);
     } catch (error) {
       console.error('Error fetching sectors:', error);
       showNotification('Failed to load sectors', 'error');
@@ -96,12 +94,14 @@ const NationalCountyData = () => {
   };
 
   const fetchIndicatorsBySubsector = useCallback(async (subsectorId) => {
-    if (!subsectorId) { setIndicators([]); return; }
+    if (!subsectorId) {
+      setIndicators([]);
+      return;
+    }
     setIndicatorsLoading(true);
     try {
-      const response = await axios.get(`${API_BASE_URL}/indicators/`);
-      const allIndicators = response.data.results || response.data || [];
-      const filteredIndicators = allIndicators.filter(indicator => indicator.subsector === subsectorId);
+      const response = await axios.get(`${API_BASE_URL}/indicators/?subsector=${subsectorId}`);
+      const filteredIndicators = response.data.results || response.data || [];
       setIndicators(filteredIndicators);
     } catch (error) {
       console.error('Error fetching indicators:', error);
@@ -112,12 +112,15 @@ const NationalCountyData = () => {
   }, []);
 
   const fetchItemsByIndicator = useCallback(async (indicatorId) => {
-    if (!indicatorId) { setItems([]); return; }
+    if (!indicatorId) {
+      setItems([]);
+      return;
+    }
     setItemsLoading(true);
     try {
-      const response = await axios.get(`${API_BASE_URL}/items/`);
-      const allItems = response.data.results || response.data || [];
-      setItems(allItems);
+      const response = await axios.get(`${API_BASE_URL}/items/?indicator=${indicatorId}`);
+      const filteredItems = response.data.results || response.data || [];
+      setItems(filteredItems);
     } catch (error) {
       console.error('Error fetching items:', error);
       showNotification('Failed to load items', 'error');
@@ -125,6 +128,17 @@ const NationalCountyData = () => {
       setItemsLoading(false);
     }
   }, []);
+
+  const handleSectorChange = (sectorId) => {
+    setSelectedSector(sectorId);
+    setSelectedSubsector(null);
+    setSelectedIndicator(null);
+    setSelectedItem(null);
+    setIndicators([]);
+    setItems([]);
+    setShowResults(false);
+    setSubsectorSearch('');
+  };
 
   const handleSubsectorSelect = (subsectorId) => {
     if (selectedSubsector === subsectorId) {
@@ -141,6 +155,7 @@ const NationalCountyData = () => {
       setItems([]);
     }
     setShowResults(false);
+    setIndicatorSearch('');
   };
 
   const handleIndicatorSelect = (indicatorId) => {
@@ -154,6 +169,7 @@ const NationalCountyData = () => {
       fetchItemsByIndicator(indicatorId);
     }
     setShowResults(false);
+    setItemSearch('');
   };
 
   const handleItemSelect = (itemId) => {
@@ -162,21 +178,24 @@ const NationalCountyData = () => {
   };
 
   const handleAreaSelect = (areaId) => {
-    setSelectedArea(selectedArea === areaId ? null : areaId);
+    setSelectedArea(areaId);
+    setShowCountySelector(false);
     setShowResults(false);
   };
 
   const clearAllFilters = () => {
+    setSelectedSector(null);
     setSelectedSubsector(null);
     setSelectedIndicator(null);
-    setSelectedArea(null);
     setSelectedItem(null);
+    setSelectedArea(null);
     setTimePeriodStart('');
     setTimePeriodEnd('');
     setSubsectorSearch('');
     setIndicatorSearch('');
     setItemSearch('');
     setAreaSearch('');
+    setShowCountySelector(false);
     setIndicators([]);
     setItems([]);
     setShowResults(false);
@@ -215,7 +234,7 @@ const NationalCountyData = () => {
       showNotification(`Loaded ${results.length} records`, 'success');
       
       setTimeout(() => {
-        const resultsSection = document.querySelector('.results-section-modern');
+        const resultsSection = document.querySelector('.results-section');
         if (resultsSection) resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
       }, 100);
     } catch (error) {
@@ -316,9 +335,15 @@ const NationalCountyData = () => {
     try {
       const XLSX = await import('xlsx');
       const worksheet = XLSX.utils.json_to_sheet(data.map(item => ({
-        'Area': item.area_name, 'Sector': item.sector_name, 'Subsector': item.subsector_name,
-        'Indicator': item.indicator_name, 'Item': item.item_name, 'Year': item.time_period,
-        'Value': item.data_value, 'Unit': item.unit_symbol, 'Flag': item.flag,
+        'Area': item.area_name,
+        'Sector': item.sector_name,
+        'Subsector': item.subsector_name,
+        'Indicator': item.indicator_name,
+        'Item': item.item_name,
+        'Year': item.time_period,
+        'Value': item.data_value,
+        'Unit': item.unit_symbol,
+        'Flag': item.flag,
       })));
       const workbook = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(workbook, worksheet, 'KilimoSTAT Data');
@@ -336,10 +361,29 @@ const NationalCountyData = () => {
   };
 
   const timePeriodYears = generateYears();
-  const filteredIndicators = indicators.filter(ind => ind.name.toLowerCase().includes(indicatorSearch.toLowerCase()));
-  const filteredItems = items.filter(item => item.name.toLowerCase().includes(itemSearch.toLowerCase()));
-  const filteredAreasList = areas.filter(area => area.administrative_level === 'ADMIN_1' && area.name !== 'KENYA' && area.name.toLowerCase().includes(areaSearch.toLowerCase()));
   const nationalArea = areas.find(area => area.name === 'KENYA');
+  
+  // Filtered data based on search
+  const filteredSubsectors = selectedSector 
+    ? (sectors.find(s => s.id === selectedSector)?.subsectors || []).filter(sub => 
+        sub.name.toLowerCase().includes(subsectorSearch.toLowerCase())
+      )
+    : [];
+  
+  const filteredIndicators = indicators.filter(ind => 
+    ind.name.toLowerCase().includes(indicatorSearch.toLowerCase())
+  );
+  
+  const filteredItems = items.filter(item => 
+    item.name.toLowerCase().includes(itemSearch.toLowerCase())
+  );
+  
+  const filteredAreasList = areas.filter(area => 
+    area.administrative_level === 'ADMIN_1' && 
+    area.name !== 'KENYA' && 
+    area.name.toLowerCase().includes(areaSearch.toLowerCase())
+  );
+  
   const hasFilters = selectedSubsector || selectedIndicator || selectedItem;
 
   const getSelectedSubsectorName = () => {
@@ -350,6 +394,11 @@ const NationalCountyData = () => {
   const getSelectedIndicatorName = () => indicators.find(i => i.id === selectedIndicator)?.name || '';
   const getSelectedItemName = () => items.find(i => i.id === selectedItem)?.name || '';
   const getSelectedAreaName = () => areas.find(a => a.id === selectedArea)?.name || '';
+
+  // Active filters count
+  const activeFiltersCount = [
+    selectedArea, selectedSubsector, selectedIndicator, selectedItem, timePeriodStart, timePeriodEnd
+  ].filter(Boolean).length;
 
   return (
     <div className="modern-data-page">
@@ -363,7 +412,7 @@ const NationalCountyData = () => {
         </div>
       )}
 
-      {/* Hero Section with Gradient */}
+      {/* Hero Section */}
       <div className="modern-hero">
         <div className="hero-bg-pattern"></div>
         <div className="container">
@@ -416,357 +465,453 @@ const NationalCountyData = () => {
       </div>
 
       <div className="container">
-        <div className="modern-layout">
-          {/* Left Panel - Modern Filters */}
-          <div className="modern-filters-panel">
-            <div className="filters-header">
-              <div className="filters-title">
-                <i className="fas fa-sliders-h"></i>
-                <h3>Data Filters</h3>
-              </div>
-              {(selectedSubsector || selectedIndicator || selectedArea || selectedItem) && (
-                <button className="clear-all-btn" onClick={clearAllFilters}>
-                  <i className="fas fa-times-circle"></i> Clear all
-                </button>
-              )}
+        {/* Active Filters Summary Bar */}
+        {activeFiltersCount > 0 && (
+          <div className="active-filters-summary">
+            <div className="summary-left">
+              <i className="fas fa-filter"></i>
+              <span>{activeFiltersCount} active filter(s)</span>
             </div>
-
-            {/* Active Filters Tags */}
-            {(selectedArea || selectedSubsector || selectedIndicator || selectedItem) && (
-              <div className="active-filters-tags">
-                <span className="tags-label">Active:</span>
-                {selectedArea && (
-                  <div className="filter-tag">
-                    <i className="fas fa-map-marker-alt"></i>
-                    <span>{getSelectedAreaName()}</span>
-                    <button onClick={() => handleAreaSelect(selectedArea)}>×</button>
-                  </div>
-                )}
-                {selectedSubsector && (
-                  <div className="filter-tag">
-                    <i className="fas fa-folder"></i>
-                    <span>{getSelectedSubsectorName()}</span>
-                    <button onClick={() => handleSubsectorSelect(selectedSubsector)}>×</button>
-                  </div>
-                )}
-                {selectedIndicator && (
-                  <div className="filter-tag">
-                    <i className="fas fa-chart-line"></i>
-                    <span>{getSelectedIndicatorName()}</span>
-                    <button onClick={() => handleIndicatorSelect(selectedIndicator)}>×</button>
-                  </div>
-                )}
-                {selectedItem && (
-                  <div className="filter-tag">
-                    <i className="fas fa-box"></i>
-                    <span>{getSelectedItemName()}</span>
-                    <button onClick={() => handleItemSelect(selectedItem)}>×</button>
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* Area Selection */}
-            <div className="filter-group-modern">
-              <div className="filter-group-header" onClick={() => setShowCounties(!showCounties)}>
-                <i className={`fas fa-chevron-${showCounties ? 'down' : 'right'}`}></i>
-                <i className="fas fa-map-marker-alt group-icon"></i>
-                <span>Location</span>
-                {selectedArea && <span className="group-badge">1 selected</span>}
-              </div>
-              {showCounties && (
-                <div className="filter-group-content">
-                  <div className="search-input">
-                    <i className="fas fa-search"></i>
-                    <input type="text" placeholder="Search county..." value={areaSearch} onChange={(e) => setAreaSearch(e.target.value)} />
-                  </div>
-                  <div className="options-list">
-                    {nationalArea && (
-                      <label className={`option-radio ${selectedArea === nationalArea.id ? 'selected' : ''}`}>
-                        <input type="radio" name="area" checked={selectedArea === nationalArea.id} onChange={() => handleAreaSelect(nationalArea.id)} />
-                        <span className="radio-indicator"></span>
-                        <span className="option-text">
-                          <strong>{nationalArea.name}</strong>
-                          <span className="badge-national">National</span>
-                        </span>
-                      </label>
-                    )}
-                    {filteredAreasList.map(area => (
-                      <label key={area.id} className={`option-radio ${selectedArea === area.id ? 'selected' : ''}`}>
-                        <input type="radio" name="area" checked={selectedArea === area.id} onChange={() => handleAreaSelect(area.id)} />
-                        <span className="radio-indicator"></span>
-                        <span className="option-text">{area.name}</span>
-                      </label>
-                    ))}
-                  </div>
+            <div className="active-filters-tags">
+              {selectedArea && (
+                <div className="filter-tag">
+                  <i className="fas fa-map-marker-alt"></i>
+                  <span>{getSelectedAreaName()}</span>
+                  <button onClick={() => handleAreaSelect(null)}>×</button>
+                </div>
+              )}
+              {selectedSubsector && (
+                <div className="filter-tag">
+                  <i className="fas fa-folder"></i>
+                  <span>{getSelectedSubsectorName()}</span>
+                  <button onClick={() => handleSubsectorSelect(selectedSubsector)}>×</button>
+                </div>
+              )}
+              {selectedIndicator && (
+                <div className="filter-tag">
+                  <i className="fas fa-chart-line"></i>
+                  <span>{getSelectedIndicatorName()}</span>
+                  <button onClick={() => handleIndicatorSelect(selectedIndicator)}>×</button>
+                </div>
+              )}
+              {selectedItem && (
+                <div className="filter-tag">
+                  <i className="fas fa-box"></i>
+                  <span>{getSelectedItemName()}</span>
+                  <button onClick={() => handleItemSelect(selectedItem)}>×</button>
+                </div>
+              )}
+              {(timePeriodStart || timePeriodEnd) && (
+                <div className="filter-tag">
+                  <i className="fas fa-calendar"></i>
+                  <span>{timePeriodStart || 'Any'} - {timePeriodEnd || 'Any'}</span>
+                  <button onClick={() => { setTimePeriodStart(''); setTimePeriodEnd(''); }}>×</button>
                 </div>
               )}
             </div>
+            <button className="clear-all-summary" onClick={clearAllFilters}>
+              Clear all
+            </button>
+          </div>
+        )}
 
-            {/* Subsector Selection */}
-            <div className="filter-group-modern">
-              <div className="filter-group-header">
-                <i className="fas fa-chart-pie group-icon"></i>
-                <span>Items Aggregated</span>
+        {/* Filter Dashboard Grid */}
+        <div className="filter-dashboard">
+          {/* Card 1: Sector - Dropdown only (no search) */}
+          <div className="filter-card">
+            <div className="card-header">
+              <i className="fas fa-chart-pie"></i>
+              <h3>1. Sector</h3>
+            </div>
+            <div className="card-body">
+              <select 
+                className="filter-select"
+                value={selectedSector || ''}
+                onChange={(e) => handleSectorChange(parseInt(e.target.value))}
+              >
+                <option value="">-- Select Sector --</option>
+                {sectors.map(s => (
+                  <option key={s.id} value={s.id}>{s.name}</option>
+                ))}
+              </select>
+            </div>
+          </div>
+
+          {/* Card 2: Subsector with Search */}
+          {selectedSector && (
+            <div className="filter-card animated-fade">
+              <div className="card-header">
+                <i className="fas fa-folder-open"></i>
+                <h3>2. Subsector</h3>
               </div>
-              <div className="filter-group-content">
-                <div className="search-input">
+              <div className="card-body">
+                <div className="search-input-modern">
                   <i className="fas fa-search"></i>
-                  <input type="text" placeholder="Search subsector..." value={subsectorSearch} onChange={(e) => setSubsectorSearch(e.target.value)} />
+                  <input 
+                    type="text" 
+                    placeholder="Search subsectors..." 
+                    value={subsectorSearch}
+                    onChange={(e) => setSubsectorSearch(e.target.value)}
+                  />
+                  {subsectorSearch && (
+                    <button className="clear-search" onClick={() => setSubsectorSearch('')}>
+                      <i className="fas fa-times"></i>
+                    </button>
+                  )}
                 </div>
-                <div className="accordion-list">
-                  {sectors.map(sector => {
-                    const displaySubsectors = sector.subsectors?.filter(s => !subsectorSearch || s.name.toLowerCase().includes(subsectorSearch.toLowerCase())) || [];
-                    if (displaySubsectors.length === 0 && subsectorSearch) return null;
-                    return (
-                      <div key={sector.id} className="accordion-item">
-                        <div className="accordion-header" onClick={() => setExpandedSectors(prev => ({ ...prev, [sector.id]: !prev[sector.id] }))}>
-                          <i className={`fas fa-chevron-${expandedSectors[sector.id] ? 'down' : 'right'}`}></i>
-                          <span>{sector.name}</span>
-                          <span className="item-count">{displaySubsectors.length}</span>
-                        </div>
-                        {expandedSectors[sector.id] && (
-                          <div className="accordion-content">
-                            {displaySubsectors.map(subsector => (
-                              <label key={subsector.id} className={`option-radio ${selectedSubsector === subsector.id ? 'selected' : ''}`}>
-                                <input type="radio" name="subsector" checked={selectedSubsector === subsector.id} onChange={() => handleSubsectorSelect(subsector.id)} />
-                                <span className="radio-indicator"></span>
-                                <span className="option-text">{subsector.name}</span>
-                              </label>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
+                <div className="tile-grid">
+                  {filteredSubsectors.map(sub => (
+                    <button
+                      key={sub.id}
+                      className={`filter-tile ${selectedSubsector === sub.id ? 'active' : ''}`}
+                      onClick={() => handleSubsectorSelect(sub.id)}
+                    >
+                      {sub.name}
+                    </button>
+                  ))}
                 </div>
+                {filteredSubsectors.length === 0 && subsectorSearch && (
+                  <div className="no-search-results">
+                    <i className="fas fa-search"></i> No subsectors found
+                  </div>
+                )}
               </div>
             </div>
+          )}
 
-            {/* Indicators Section */}
-            {selectedSubsector && (
-              <div className="filter-group-modern animated-fade">
-                <div className="filter-group-header">
-                  <i className="fas fa-chart-line group-icon"></i>
-                  <span>Indicators</span>
-                  {indicatorsLoading && <i className="fas fa-spinner fa-spin loading-icon"></i>}
-                </div>
-                <div className="filter-group-content">
-                  <div className="search-input">
-                    <i className="fas fa-search"></i>
-                    <input type="text" placeholder="Search indicators..." value={indicatorSearch} onChange={(e) => setIndicatorSearch(e.target.value)} />
-                  </div>
-                  <div className="options-list">
-                    {filteredIndicators.map(indicator => (
-                      <label key={indicator.id} className={`option-radio ${selectedIndicator === indicator.id ? 'selected' : ''}`}>
-                        <input type="radio" name="indicator" checked={selectedIndicator === indicator.id} onChange={() => handleIndicatorSelect(indicator.id)} />
-                        <span className="radio-indicator"></span>
-                        <span className="option-text">{indicator.name}</span>
-                      </label>
-                    ))}
-                    {filteredIndicators.length === 0 && !indicatorsLoading && (
-                      <div className="no-results-modern">
-                        <i className="fas fa-search"></i> No indicators found
-                      </div>
-                    )}
-                  </div>
-                </div>
+          {/* Card 3: Indicator with Search */}
+          {selectedSubsector && (
+            <div className="filter-card animated-fade">
+              <div className="card-header">
+                <i className="fas fa-chart-line"></i>
+                <h3>3. Indicator</h3>
+                {indicatorsLoading && <i className="fas fa-spinner fa-spin loading-icon"></i>}
               </div>
-            )}
-
-            {/* Items Section */}
-            {selectedIndicator && (
-              <div className="filter-group-modern animated-fade">
-                <div className="filter-group-header">
-                  <i className="fas fa-box group-icon"></i>
-                  <span>Items</span>
-                  {itemsLoading && <i className="fas fa-spinner fa-spin loading-icon"></i>}
+              <div className="card-body">
+                <div className="search-input-modern">
+                  <i className="fas fa-search"></i>
+                  <input 
+                    type="text" 
+                    placeholder="Search indicators..." 
+                    value={indicatorSearch}
+                    onChange={(e) => setIndicatorSearch(e.target.value)}
+                  />
+                  {indicatorSearch && (
+                    <button className="clear-search" onClick={() => setIndicatorSearch('')}>
+                      <i className="fas fa-times"></i>
+                    </button>
+                  )}
                 </div>
-                <div className="filter-group-content">
-                  <div className="search-input">
-                    <i className="fas fa-search"></i>
-                    <input type="text" placeholder="Search items..." value={itemSearch} onChange={(e) => setItemSearch(e.target.value)} />
+                {filteredIndicators.length === 0 && !indicatorsLoading ? (
+                  <div className="empty-filter-state">
+                    <i className="fas fa-info-circle"></i>
+                    <p>{indicatorSearch ? 'No indicators match your search' : 'No indicators available'}</p>
                   </div>
-                  <div className="options-list">
+                ) : (
+                  <div className="tile-grid">
+                    {filteredIndicators.map(ind => (
+                      <button
+                        key={ind.id}
+                        className={`filter-tile ${selectedIndicator === ind.id ? 'active' : ''}`}
+                        onClick={() => handleIndicatorSelect(ind.id)}
+                      >
+                        {ind.name}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Card 4: Item with Search */}
+          {selectedIndicator && (
+            <div className="filter-card animated-fade">
+              <div className="card-header">
+                <i className="fas fa-box"></i>
+                <h3>4. Item / Product</h3>
+                {itemsLoading && <i className="fas fa-spinner fa-spin loading-icon"></i>}
+              </div>
+              <div className="card-body">
+                <div className="search-input-modern">
+                  <i className="fas fa-search"></i>
+                  <input 
+                    type="text" 
+                    placeholder="Search items..." 
+                    value={itemSearch}
+                    onChange={(e) => setItemSearch(e.target.value)}
+                  />
+                  {itemSearch && (
+                    <button className="clear-search" onClick={() => setItemSearch('')}>
+                      <i className="fas fa-times"></i>
+                    </button>
+                  )}
+                </div>
+                {filteredItems.length === 0 && !itemsLoading ? (
+                  <div className="empty-filter-state">
+                    <i className="fas fa-info-circle"></i>
+                    <p>{itemSearch ? 'No items match your search' : 'No items available'}</p>
+                  </div>
+                ) : (
+                  <div className="tile-grid items-grid">
                     {filteredItems.map(item => (
-                      <label key={item.id} className={`option-radio ${selectedItem === item.id ? 'selected' : ''}`}>
-                        <input type="radio" name="item" checked={selectedItem === item.id} onChange={() => handleItemSelect(item.id)} />
-                        <span className="radio-indicator"></span>
-                        <span className="option-text">{item.name}</span>
-                      </label>
+                      <button
+                        key={item.id}
+                        className={`filter-tile ${selectedItem === item.id ? 'active' : ''}`}
+                        onClick={() => handleItemSelect(item.id)}
+                      >
+                        {item.name}
+                      </button>
                     ))}
-                    {filteredItems.length === 0 && !itemsLoading && (
-                      <div className="no-results-modern">
-                        <i className="fas fa-search"></i> No items found
-                      </div>
-                    )}
                   </div>
-                </div>
-              </div>
-            )}
-
-            {/* Time Period */}
-            <div className="filter-group-modern">
-              <div className="filter-group-header">
-                <i className="fas fa-calendar-alt group-icon"></i>
-                <span>Time Period</span>
-              </div>
-              <div className="filter-group-content">
-                <div className="range-selector">
-                  <select value={timePeriodStart} onChange={(e) => setTimePeriodStart(e.target.value)}>
-                    <option value="">From Year</option>
-                    {timePeriodYears.map(year => <option key={year} value={year}>{year}</option>)}
-                  </select>
-                  <span className="range-arrow">→</span>
-                  <select value={timePeriodEnd} onChange={(e) => setTimePeriodEnd(e.target.value)}>
-                    <option value="">To Year</option>
-                    {timePeriodYears.map(year => <option key={year} value={year}>{year}</option>)}
-                  </select>
-                </div>
+                )}
               </div>
             </div>
+          )}
 
-            {/* Action Buttons */}
-            <div className="filter-actions-modern">
-              <button className="btn-show-data-modern" onClick={handleShowData} disabled={!hasFilters || loading}>
-                {loading ? <><i className="fas fa-spinner fa-spin"></i> Loading...</> : <><i className="fas fa-chart-line"></i> Show Data</>}
-              </button>
-              <div className="export-buttons">
-                <button className="btn-export-modern csv" onClick={() => exportData('csv')} disabled={!hasFilters || exporting || !showResults}>
-                  <i className="fas fa-file-csv"></i> CSV
-                </button>
-                <button className="btn-export-modern json" onClick={() => exportData('json')} disabled={!hasFilters || exporting || !showResults}>
-                  <i className="fas fa-file-code"></i> JSON
-                </button>
-                <button className="btn-export-modern excel" onClick={() => exportData('excel')} disabled={!hasFilters || exporting || !showResults}>
-                  <i className="fas fa-file-excel"></i> Excel
-                </button>
+          {/* Card 5: Location with Search */}
+          <div className="filter-card">
+            <div className="card-header">
+              <i className="fas fa-map-marker-alt"></i>
+              <h3>5. Location</h3>
+            </div>
+            <div className="card-body">
+              <div className="location-options">
+                <label className="radio-label">
+                  <input 
+                    type="radio" 
+                    name="area" 
+                    checked={selectedArea === nationalArea?.id} 
+                    onChange={() => handleAreaSelect(nationalArea?.id)} 
+                  />
+                  <span>🇰🇪 National (Kenya)</span>
+                </label>
+                <label className="radio-label">
+                  <input 
+                    type="radio" 
+                    name="area" 
+                    checked={selectedArea && selectedArea !== nationalArea?.id} 
+                    onChange={() => setShowCountySelector(true)} 
+                  />
+                  <span>🏛️ Select County</span>
+                </label>
+              </div>
+              
+              {showCountySelector && (
+                <div className="county-selector">
+                  <div className="search-input-modern">
+                    <i className="fas fa-search"></i>
+                    <input 
+                      type="text" 
+                      placeholder="Search county..." 
+                      value={areaSearch} 
+                      onChange={(e) => setAreaSearch(e.target.value)} 
+                    />
+                    {areaSearch && (
+                      <button className="clear-search" onClick={() => setAreaSearch('')}>
+                        <i className="fas fa-times"></i>
+                      </button>
+                    )}
+                  </div>
+                  <div className="tile-grid county-grid">
+                    {filteredAreasList.map(area => (
+                      <button
+                        key={area.id}
+                        className={`filter-tile ${selectedArea === area.id ? 'active' : ''}`}
+                        onClick={() => handleAreaSelect(area.id)}
+                      >
+                        {area.name}
+                      </button>
+                    ))}
+                  </div>
+                  {filteredAreasList.length === 0 && areaSearch && (
+                    <div className="no-search-results">
+                      <i className="fas fa-search"></i> No counties found
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Card 6: Time Period */}
+          <div className="filter-card">
+            <div className="card-header">
+              <i className="fas fa-calendar-alt"></i>
+              <h3>6. Time Period</h3>
+            </div>
+            <div className="card-body">
+              <div className="year-range">
+                <select value={timePeriodStart} onChange={(e) => setTimePeriodStart(e.target.value)}>
+                  <option value="">From Year</option>
+                  {timePeriodYears.map(year => (
+                    <option key={year} value={year}>{year}</option>
+                  ))}
+                </select>
+                <span className="range-arrow">→</span>
+                <select value={timePeriodEnd} onChange={(e) => setTimePeriodEnd(e.target.value)}>
+                  <option value="">To Year</option>
+                  {timePeriodYears.map(year => (
+                    <option key={year} value={year}>{year}</option>
+                  ))}
+                </select>
               </div>
             </div>
           </div>
 
-          {/* Right Panel - Results */}
-          <div className="modern-results-panel">
-            {/* Info Card */}
-            <div className="info-card-modern">
-              <div className="info-icon">
+          {/* Action Bar */}
+          <div className="filter-actions-bar">
+            <button 
+              className="btn-show-data-large" 
+              onClick={handleShowData} 
+              disabled={!hasFilters || loading}
+            >
+              {loading ? (
+                <><i className="fas fa-spinner fa-spin"></i> Loading...</>
+              ) : (
+                <><i className="fas fa-chart-line"></i> Show Data</>
+              )}
+            </button>
+            <div className="export-shortcuts">
+              <button 
+                className="btn-icon" 
+                onClick={() => exportData('csv')} 
+                disabled={!hasFilters || exporting || !showResults}
+                title="Export as CSV"
+              >
+                <i className="fas fa-file-csv"></i> CSV
+              </button>
+              <button 
+                className="btn-icon" 
+                onClick={() => exportData('json')} 
+                disabled={!hasFilters || exporting || !showResults}
+                title="Export as JSON"
+              >
+                <i className="fas fa-file-code"></i> JSON
+              </button>
+              <button 
+                className="btn-icon" 
+                onClick={() => exportData('excel')} 
+                disabled={!hasFilters || exporting || !showResults}
+                title="Export as Excel"
+              >
+                <i className="fas fa-file-excel"></i> Excel
+              </button>
+              <button 
+                className="btn-icon btn-clear" 
+                onClick={clearAllFilters}
+                title="Clear all filters"
+              >
+                <i className="fas fa-trash-alt"></i>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {/* Results Section */}
+        <div className="results-section">
+          {!showResults ? (
+            <div className="empty-state-modern">
+              <div className="empty-icon">
                 <i className="fas fa-chart-line"></i>
               </div>
-              <div className="info-text">
-                <h4>Agricultural Data Explorer</h4>
-                <p>Select filters from the left panel to explore Kenya's agricultural statistics. <br /> <br />
-               
-                </p>
+              <h4>No Data Loaded</h4>
+              <p>Select a subsector, indicator, or item and click "Show Data" to view agricultural statistics.</p>
+              <div className="empty-hint">
+                <i className="fas fa-lightbulb"></i>
+                <span>Start by selecting a sector, then subsector from the filter cards above</span>
               </div>
             </div>
-
-            {/* Bulk Downloads */}
-            <div className="bulk-downloads-modern">
-              <h4><i className="fas fa-database"></i>Downloads</h4>
-              <div className="bulk-buttons">
-                <button onClick={() => exportData('csv')}><i className="fas fa-file-csv"></i> CSV</button>
-                <button onClick={() => exportData('json')}><i className="fas fa-file-code"></i> JSON</button>
-                <button onClick={() => exportData('excel')}><i className="fas fa-file-excel"></i> Excel</button>
-                <button style={{ padding: '8px 20px' }}><Link to="/visualization-tab">
-                            <i className="fas fa-chart-line"></i> Visualize </Link></button>
-
-                <button style={{ padding: '8px 20px' }}><Link to="/visualization">
-                            <i className="fas fa-chart-line"></i> Trends </Link></button>
-              </div>
+          ) : loading ? (
+            <div className="loading-state">
+              <div className="modern-spinner"></div>
+              <p>Loading your data...</p>
             </div>
-
-            {/* Results Section */}
-            <div className="results-section-modern">
-              <div className="results-header-modern">
+          ) : data.length === 0 ? (
+            <div className="empty-state-modern">
+              <i className="fas fa-inbox"></i>
+              <h4>No Results Found</h4>
+              <p>Try adjusting your filters or selecting different options.</p>
+              <button className="clear-filters-btn" onClick={clearAllFilters}>Clear All Filters</button>
+            </div>
+          ) : (
+            <>
+              <div className="results-header">
                 <div className="results-title">
                   <i className="fas fa-table"></i>
                   <h4>Data Results</h4>
-                  {showResults && <span className="results-badge">{totalCount.toLocaleString()} records</span>}
+                  <span className="results-badge">{totalCount.toLocaleString()} records</span>
                 </div>
-                {showResults && (
-                  <button className="refresh-btn" onClick={() => fetchData(currentPage, pageSize)} disabled={loading}>
-                    <i className="fas fa-sync-alt"></i>
-                  </button>
-                )}
+                <button className="refresh-btn" onClick={() => fetchData(currentPage, pageSize)} disabled={loading}>
+                  <i className="fas fa-sync-alt"></i>
+                </button>
               </div>
 
-              {!showResults ? (
-                <div className="empty-state-modern">
-                  <div className="empty-icon">
-                    <i className="fas fa-chart-line"></i>
-                  </div>
-                  <h4>No Data Loaded</h4>
-                  <p>Select a subsector, indicator, or item and click "Show Data" to view agricultural statistics.</p>
-                  <div className="empty-hint">
-                    <i className="fas fa-lightbulb"></i>
-                    <span>Start by selecting a subsector from the Items Aggregated section</span>
-                  </div>
-                </div>
-              ) : loading ? (
-                <div className="loading-state">
-                  <div className="modern-spinner"></div>
-                  <p>Loading your data...</p>
-                </div>
-              ) : data.length === 0 ? (
-                <div className="empty-state-modern">
-                  <i className="fas fa-inbox"></i>
-                  <h4>No Results Found</h4>
-                  <p>Try adjusting your filters or selecting different options.</p>
-                  <button className="clear-filters-btn" onClick={clearAllFilters}>Clear All Filters</button>
-                </div>
-              ) : (
-                <>
-                  <div className="table-wrapper">
-                    <table className="modern-data-table">
-                      <thead>
-                        <tr>
-                          <th>Area</th>
-                          <th>Indicator</th>
-                          <th>Item</th>
-                          <th>Year</th>
-                          <th>Value</th>
-                          <th>Unit</th>
-                          <th></th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {data.map((item) => (
-                          <tr key={item.id} onClick={() => { setPreviewDetailsData(item); setShowPreviewDetailsModal(true); }}>
-                            <td data-label="Area"><span className="cell-value">{item.area_name}</span></td>
-                            <td data-label="Indicator">{item.indicator_name}</td>
-                            <td data-label="Item">{item.item_name}</td>
-                            <td data-label="Year">{item.time_period}</td>
-                            <td data-label="Value" className="value-cell">{item.data_value?.toLocaleString()}{item.flag && <span className="flag-badge-modern">{item.flag}</span>}</td>
-                            <td data-label="Unit">{item.unit_symbol}</td>
-                            <td className="action-cell"><button className="view-details-btn"><i className="fas fa-info-circle"></i></button></td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+              <div className="table-wrapper">
+                <table className="modern-data-table">
+                  <thead>
+                    <tr>
+                      <th>Area</th>
+                      <th>Indicator</th>
+                      <th>Item</th>
+                      <th>Year</th>
+                      <th>Value</th>
+                      <th>Unit</th>
+                      <th></th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {data.map((item) => (
+                      <tr key={item.id} onClick={() => { setPreviewDetailsData(item); setShowPreviewDetailsModal(true); }}>
+                        <td data-label="Area"><span className="cell-value">{item.area_name}</span></td>
+                        <td data-label="Indicator">{item.indicator_name}</td>
+                        <td data-label="Item">{item.item_name}</td>
+                        <td data-label="Year">{item.time_period}</td>
+                        <td data-label="Value" className="value-cell">
+                          {item.data_value?.toLocaleString()}
+                          {item.flag && <span className="flag-badge-modern">{item.flag}</span>}
+                        </td>
+                        <td data-label="Unit">{item.unit_symbol}</td>
+                        <td className="action-cell">
+                          <button className="view-details-btn">
+                            <i className="fas fa-info-circle"></i>
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
 
-                  {/* Pagination */}
-                  {totalCount > pageSize && (
-                    <div className="pagination-modern">
-                      <button onClick={() => fetchData(currentPage - 1, pageSize)} disabled={currentPage === 1}>
-                        <i className="fas fa-chevron-left"></i> Previous
-                      </button>
-                      <span className="page-info">Page {currentPage} of {Math.ceil(totalCount / pageSize)}</span>
-                      <button onClick={() => fetchData(currentPage + 1, pageSize)} disabled={currentPage === Math.ceil(totalCount / pageSize)}>
-                        Next <i className="fas fa-chevron-right"></i>
-                      </button>
-                      <select value={pageSize} onChange={(e) => { setPageSize(Number(e.target.value)); fetchData(1, Number(e.target.value)); }} className="page-size-select">
-                        <option value={10}>10 / page</option>
-                        <option value={20}>20 / page</option>
-                        <option value={50}>50 / page</option>
-                        <option value={100}>100 / page</option>
-                      </select>
-                    </div>
-                  )}
-                </>
+              {/* Pagination */}
+              {totalCount > pageSize && (
+                <div className="pagination-modern">
+                  <button onClick={() => fetchData(currentPage - 1, pageSize)} disabled={currentPage === 1}>
+                    <i className="fas fa-chevron-left"></i> Previous
+                  </button>
+                  <span className="page-info">
+                    Page {currentPage} of {Math.ceil(totalCount / pageSize)}
+                  </span>
+                  <button onClick={() => fetchData(currentPage + 1, pageSize)} disabled={currentPage === Math.ceil(totalCount / pageSize)}>
+                    Next <i className="fas fa-chevron-right"></i>
+                  </button>
+                  <select 
+                    value={pageSize} 
+                    onChange={(e) => { 
+                      setPageSize(Number(e.target.value)); 
+                      fetchData(1, Number(e.target.value)); 
+                    }} 
+                    className="page-size-select"
+                  >
+                    <option value={10}>10 / page</option>
+                    <option value={20}>20 / page</option>
+                    <option value={50}>50 / page</option>
+                    <option value={100}>100 / page</option>
+                  </select>
+                </div>
               )}
-            </div>
-          </div>
+            </>
+          )}
         </div>
       </div>
 
@@ -776,7 +921,9 @@ const NationalCountyData = () => {
           <div className="modern-modal" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header-modern">
               <h3><i className="fas fa-info-circle"></i> Record Details</h3>
-              <button className="modal-close-btn" onClick={() => setShowPreviewDetailsModal(false)}><i className="fas fa-times"></i></button>
+              <button className="modal-close-btn" onClick={() => setShowPreviewDetailsModal(false)}>
+                <i className="fas fa-times"></i>
+              </button>
             </div>
             <div className="modal-body-modern">
               <div className="details-grid-modern">
